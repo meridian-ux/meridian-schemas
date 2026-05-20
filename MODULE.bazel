@@ -1,0 +1,36 @@
+module(
+    name = "meridian",
+    version = "0.1.0",
+    compatibility_level = 1,
+)
+
+bazel_dep(name = "aspect_rules_js", version = "3.1.2")
+bazel_dep(name = "aspect_rules_ts", version = "3.8.9")
+bazel_dep(name = "rules_nodejs", version = "6.7.4")
+bazel_dep(name = "bazel_skylib", version = "1.8.2")
+
+# rules_vite is dev-only: it's used to wire vitest_test targets in
+# tests/BUILD.bazel. Consumers of meridian don't need it.
+bazel_dep(name = "rules_vite", version = "0.1.0", dev_dependency = True)
+
+node = use_extension(
+    "@rules_nodejs//nodejs:extensions.bzl",
+    "node",
+    dev_dependency = True,
+)
+node.toolchain(node_version = "22.11.0")
+
+rules_ts_ext = use_extension("@aspect_rules_ts//ts:extensions.bzl", "ext")
+rules_ts_ext.deps(ts_version = "5.6.2")
+use_repo(rules_ts_ext, "npm_typescript")
+
+npm = use_extension(
+    "@aspect_rules_js//npm:extensions.bzl",
+    "npm",
+    dev_dependency = True,
+)
+npm.npm_translate_lock(
+    name = "npm",
+    pnpm_lock = "//:pnpm-lock.yaml",
+)
+use_repo(npm, "npm")

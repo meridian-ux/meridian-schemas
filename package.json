@@ -1,0 +1,36 @@
+{
+  "name": "@meridian/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lightweight web component runtime: typed worker controller, DOM patch helpers, template loader, UI kit CSS, and Bazel rules for declarative component graphs.",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js"
+    },
+    "./*": {
+      "types": "./src/*.d.ts",
+      "import": "./src/*.js"
+    }
+  },
+  "files": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.d.ts",
+    "src/**/*.json",
+    "bazel/**/*.bzl",
+    "BUILD.bazel",
+    "MODULE.bazel",
+    "README.md"
+  ],
+  "devDependencies": {
+    "vitest": "2.1.4",
+    "typescript": "5.6.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}
