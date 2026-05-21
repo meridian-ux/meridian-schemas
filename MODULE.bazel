@@ -70,6 +70,9 @@ maven.install(
         "com.google.api.grpc:proto-google-common-protos:2.55.2",
         "com.google.code.gson:gson:2.13.1",
         "com.google.protobuf:protobuf-java:4.33.4",
+        # JsonFormat — proto ↔ proto3-JSON, used by the JsonRpcGateway
+        # to bridge browser POST bodies into typed gRPC requests.
+        "com.google.protobuf:protobuf-java-util:4.33.4",
         # gRPC in-process transport — the JavaFX renderer talks to its
         # host server over an InProcess channel. Other transports work
         # too; the LRO driver uses ClientCalls.blockingUnaryCall which
