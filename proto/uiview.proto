@@ -41,6 +41,23 @@ message PanelDescriptor {
   }
 }
 
+// A reload-friendly bundle of `PanelDescriptor`s authored as a single
+// textproto, compiled to `.binpb` by the `meridian_panel_bundle`
+// Bazel rule, and loaded by every renderer at startup.
+//
+// The host runtime watches the on-disk `.binpb` (dev workflow: edit
+// textproto, save, see panels refresh) and re-publishes the parsed
+// bundle to its renderer. In prod the same code path is driven by an
+// admin RPC.
+message PanelBundle {
+  // Display version. Renderers log this on reload so changes are
+  // observable in support sessions; the runtime does no semver work.
+  string version = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Panels in display order. Renderers route to one of these by
+  // matching `panel_id`.
+  repeated PanelDescriptor panels = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
 // "Fetch a list per current document, render a table" shape.
 message TablePanel {
   // RPC to call when this panel becomes active.
