@@ -1,8 +1,23 @@
 load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_proto_grpc_java//:defs.bzl", "java_grpc_library", "java_proto_library")
+load("@rules_rust_prost//:defs.bzl", "rust_prost_transform")
 
 package(default_visibility = ["//visibility:public"])
+
+# Adds `#[derive(::serde::Serialize, ::serde::Deserialize)]` to every
+# prost-generated type for meridian.ui.v1 so the wasm-bindgen surface
+# (//rust/uiview:uiview_wasm_lib) can serde_wasm_bindgen-round-trip
+# JSON-shaped PanelDescriptors across the JS boundary. The `deps`
+# attribute hands the serde crate to the prost-generated rust target
+# so the derives resolve.
+rust_prost_transform(
+    name = "uiview_proto_serde_transform",
+    prost_opts = [
+        "type_attribute=.=#[derive(::serde::Serialize\\, ::serde::Deserialize)]",
+    ],
+    deps = ["@crates//:serde"],
+)
 
 # Meridian's platform-neutral UI view descriptors.
 #
@@ -20,6 +35,7 @@ package(default_visibility = ["//visibility:public"])
 proto_library(
     name = "uiview_proto",
     srcs = ["uiview.proto"],
+    data = [":uiview_proto_serde_transform"],
     deps = [
         "@googleapis//google/api:field_behavior_proto",
     ],

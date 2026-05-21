@@ -16,6 +16,15 @@ bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "rules_jvm_external", version = "6.8")
 bazel_dep(name = "rules_java", version = "8.15.2")
 
+# Rust — uiview core + ratatui TUI + tui-demo. Crate dependencies
+# resolve via crate_universe reading rust/Cargo.toml + Cargo.lock;
+# proto codegen via rules_rust_prost (consumes Bazel proto_library
+# graphs so @googleapis provides field_behavior natively, no
+# vendoring); wasm bundle via rules_rust_wasm_bindgen.
+bazel_dep(name = "rules_rust", version = "0.70.0")
+bazel_dep(name = "rules_rust_prost", version = "0.70.0")
+bazel_dep(name = "rules_rust_wasm_bindgen", version = "0.70.0")
+
 # Proto contracts — meridian.ui.v1.PanelDescriptor and friends. The
 # descriptors compile to Java + (eventually) TypeScript + Rust so the
 # same protos drive every platform's renderer.
@@ -82,3 +91,39 @@ maven.install(
     ],
 )
 use_repo(maven, "maven")
+
+# Rust toolchain. Pinned to match the workspace's Cargo.toml edition.
+rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust.toolchain(
+    edition = "2021",
+    versions = ["1.85.0"],
+    # wasm32 target needed by rules_rust_wasm_bindgen.
+    extra_target_triples = ["wasm32-unknown-unknown"],
+)
+use_repo(rust, "rust_toolchains")
+register_toolchains("@rust_toolchains//:all")
+
+# Crate-universe pulls dependencies declared in rust/Cargo.toml +
+# Cargo.lock and exposes them as Bazel targets. The lockfile is
+# authoritative; bazel re-resolution is opt-in via `bazel run
+# @crates//:cargo`.
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    cargo_lockfile = "//rust:Cargo.lock",
+    manifests = ["//rust:Cargo.toml"],
+)
+use_repo(crate, "crates")
+
+# wasm-bindgen toolchain. The default toolchain from
+# rules_rust_wasm_bindgen pulls a pinned wasm-bindgen-cli binary —
+# no host install required.
+register_toolchains("@rules_rust_wasm_bindgen//:default_wasm_bindgen_toolchain")
+
+# Tonic-free prost toolchain. Defined in //rust:BUILD.bazel. Root
+# MODULE registrations win toolchain resolution over the default
+# `@rules_rust_prost//:default_prost_toolchain`, which drags tonic +
+# tokio + mio into every rust_prost_library — incompatible with the
+# wasm32 transition. uiview only needs proto types; gRPC clients are
+# wired up separately on native targets.
+register_toolchains("//rust:prost_toolchain")
