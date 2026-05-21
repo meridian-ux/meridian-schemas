@@ -1,0 +1,50 @@
+load("@rules_java//java:java_library.bzl", "java_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_proto_grpc_java//:defs.bzl", "java_grpc_library", "java_proto_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# Meridian's platform-neutral UI view descriptors.
+#
+# A PanelDescriptor captures everything a renderer needs to host one
+# right-pane view: which RPC to call, how to map the response into
+# rows, what columns to display, what actions to expose, what type
+# conversions to apply. Three renderers will consume the same protos:
+#
+#   - JavaFX desktop UI (under //java/javafx)
+#   - Web (TypeScript / web components) — staged for stage 2
+#   - Rust TUI (ratatui) — staged for stage 3
+#
+# Bespoke layouts that don't fit any shape variant route through the
+# AdhocPanel oneof variant which names a host-side handler.
+proto_library(
+    name = "uiview_proto",
+    srcs = ["uiview.proto"],
+    deps = [
+        "@googleapis//google/api:field_behavior_proto",
+    ],
+)
+
+java_proto_library(
+    name = "uiview_java_proto_library",
+    protos = [":uiview_proto"],
+    deps = [
+        ":uiview_proto",
+        "@googleapis//google/api:api_java_proto",
+        "@protobuf//:protobuf_java",
+    ],
+)
+
+# Java gRPC stubs for google.longrunning.Operations, generated via the
+# rules_proto_grpc_java toolchain. We can't depend on googleapis-grpc-
+# java directly because it ships a grpc-java compiler plugin that
+# doesn't compile against our pinned protobuf version — so we generate
+# the stubs locally against our toolchain. Same pattern Pinax uses.
+java_grpc_library(
+    name = "longrunning_java_grpc_library",
+    protos = ["@googleapis//google/longrunning:operations_proto"],
+    deps = [
+        "@googleapis//google/longrunning:longrunning_java_proto",
+        "@maven//:com_google_api_grpc_proto_google_common_protos",
+    ],
+)

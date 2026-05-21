@@ -1,0 +1,241 @@
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "UiviewProto";
+
+// PanelDescriptor: a platform-neutral description of one right-pane
+// view. `panel_id` is the routing key; `body` selects which shape
+// (table / lro / adhoc) the renderer should use.
+//
+// Meridian ships three host renderers consuming the same descriptors:
+//   - JavaFX desktop (meridian.ui.javafx)
+//   - Web via web components (meridian.ui in TypeScript)
+//   - Rust TUI via ratatui (meridian.ui in Rust)
+//
+// Bespoke layouts (SPARQL editors, image viewers, document trees)
+// that don't fit any shape variant stay as hand-coded host classes
+// behind the `adhoc` oneof variant — the framework explicitly
+// accommodates that.
+message PanelDescriptor {
+  // Stable identifier ("claims", "review_tickets", ...). Renderers
+  // use this as the routing key and for telemetry.
+  string panel_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Display title shown at the top of the panel.
+  string title = 2 [(google.api.field_behavior) = REQUIRED];
+  // Shape selector. Each variant has its own renderer.
+  oneof body {
+    // Fetch a list, render a table.
+    TablePanel table = 3;
+    // Long-running operation driver. (Reserved; renderer support
+    // arrives alongside the first LRO migration.)
+    LroPanel lro = 4;
+    // Bespoke host-supplied layout (SPARQL editor, image viewer,
+    // tree, etc.). The host looks up `adhoc.handler_id` in its own
+    // registry and instantiates the corresponding hand-coded view.
+    AdhocPanel adhoc = 5;
+  }
+}
+
+// "Fetch a list per current document, render a table" shape.
+message TablePanel {
+  // RPC to call when this panel becomes active.
+  RpcCall populate = 1 [(google.api.field_behavior) = REQUIRED];
+  // Path within the response message to the row list. The named
+  // field must be a `repeated` field; ProtoPaths resolves the chain
+  // (e.g. "claims" or "outer.inner.rows").
+  string rows_field = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional noun for the meta line ("claims", "tickets").
+  string item_noun = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional placeholder displayed when the table is empty.
+  string placeholder = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Column definitions in display order.
+  repeated TableColumn columns = 5 [(google.api.field_behavior) = REQUIRED];
+  // Actions exposed on the selected row (typically rendered as
+  // buttons above the table).
+  repeated RowAction actions = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// "Submit + poll WaitOperation + render the response" shape. Reserved
+// for the second migration round; declared now so renderers can stub
+// the variant without proto churn later.
+message LroPanel {
+  // Initial RPC. Must return `google.longrunning.Operation`.
+  RpcCall start = 1 [(google.api.field_behavior) = REQUIRED];
+  // Fully-qualified proto type name (as it appears in
+  // Operation.metadata.type_url after the URL prefix) the metadata
+  // unpacks to, e.g. "pinax.knowledge.v1.GenerateKnowledgeProbesMetadata".
+  string metadata_type = 2 [(google.api.field_behavior) = REQUIRED];
+  // Same, for the final Operation.response.
+  string response_type = 3 [(google.api.field_behavior) = REQUIRED];
+  // Label for the run button.
+  string run_button_label = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Form inputs the operator fills before submitting.
+  repeated FormField inputs = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional post-LRO sync call that takes the LRO response and
+  // returns the data to feed into `result`. For example
+  // KnowledgeAssessmentService: Generate (LRO) → Assess (sync).
+  RpcCall finalize = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Table-shaped result rendering. If `finalize` is set, this
+  // describes the finalize response; otherwise the LRO response.
+  TablePanel result = 7 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Host-specific layout. The descriptor only names the handler; the
+// host's adhoc registry supplies the implementation. Use this for
+// bespoke views (code editors, tree views, image viewers) that the
+// table/LRO shapes can't express cleanly.
+message AdhocPanel {
+  // Identifier the host looks up in its adhoc registry.
+  string handler_id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// One gRPC call: which service, which method, how to build the
+// request from runtime context (the open PDF, the UI's Identity, the
+// selected row, form input values).
+message RpcCall {
+  // Fully-qualified service name, e.g. "pinax.claims.v1.ClaimsService".
+  string service = 1 [(google.api.field_behavior) = REQUIRED];
+  // Method name on the service, e.g. "ListClaims".
+  string method = 2 [(google.api.field_behavior) = REQUIRED];
+  // Bindings populate request fields from runtime context.
+  repeated FieldBinding bindings = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One assignment: "set request field X from source Y".
+message FieldBinding {
+  // Path within the RPC request message, e.g. "pdf_path" or
+  // "decider.identity_id".
+  string request_field = 1 [(google.api.field_behavior) = REQUIRED];
+  // Where to source the value from.
+  oneof source {
+    // Pull from the runtime context (current PDF path, UI identity).
+    ContextSource context = 2;
+    // Pull a field from the selected row (only valid for row actions).
+    string row_field = 3;
+    // Pull from a form input by field_id (only valid in LRO inputs).
+    string form_field = 4;
+    // Hard-coded literal value (interpreted by request_field's type).
+    string literal = 5;
+    // Nested binding set — for building sub-messages (e.g. assemble
+    // a `decider` Identity from several scalar bindings).
+    NestedBinding nested = 6;
+  }
+}
+
+// Sub-message binding. Each entry sets one field inside the parent's
+// sub-message at `request_field`.
+message NestedBinding {
+  // Field bindings populating the sub-message.
+  repeated FieldBinding fields = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// One column in a TablePanel. Display order matches definition order.
+message TableColumn {
+  // Column header text.
+  string header = 1 [(google.api.field_behavior) = REQUIRED];
+  // Path within the row message, e.g. "confidence" or
+  // "subject.claim.claim_text".
+  string field_path = 2 [(google.api.field_behavior) = REQUIRED];
+  // How to format the value for display.
+  ColumnFormat format = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Hint for desktop / web renderers; TUI hosts may ignore.
+  int32 pref_width = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One action button exposed on the row's actions bar.
+message RowAction {
+  // Button label.
+  string label = 1 [(google.api.field_behavior) = REQUIRED];
+  // RPC fired when the button is clicked.
+  RpcCall rpc = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional: only enable the button when the selected row matches
+  // this predicate (e.g. "only enable Resolve for OPEN tickets").
+  RowFilter enabled_when = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional: re-fetch the table once the action completes. Default
+  // true.
+  bool refresh_on_success = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Predicate over a selected row. Today: equality on a single string
+// field. Extensible to more operators later without breaking changes.
+message RowFilter {
+  // Path within the row, e.g. "state".
+  string field_path = 1 [(google.api.field_behavior) = REQUIRED];
+  // Stringified expected value. Compared via the value's renderable
+  // form (enum name, formatted number, etc.).
+  string equals = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// One input field on an LroPanel's input form.
+message FormField {
+  // Stable identifier; referenced by FieldBinding.form_field.
+  string field_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Display label.
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+  // Path within the start RPC request that this field populates.
+  string request_field = 3 [(google.api.field_behavior) = REQUIRED];
+  oneof kind {
+    // Integer spinner input.
+    IntegerSpinner integer = 4;
+    // Single-line text input.
+    TextInput text = 5;
+  }
+}
+
+// Integer input with min/max/step. Renders as a Spinner on desktop, a
+// numeric input on TUI.
+message IntegerSpinner {
+  // Minimum value (inclusive).
+  int32 min = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Maximum value (inclusive).
+  int32 max = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Pre-filled value.
+  int32 default_value = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Increment for arrow keys / spinner buttons.
+  int32 step = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Single-line text input.
+message TextInput {
+  // Pre-filled value.
+  string default_value = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Sources the renderer can pull binding values from at call time.
+enum ContextSource {
+  // Default; unused on the wire.
+  CONTEXT_SOURCE_UNSPECIFIED = 0;
+  // The currently active resource path (string). Hosts define what
+  // this means: in Pinax it's the open PDF's filesystem path; in
+  // other hosts it could be a URI, an opaque resource id, etc.
+  CURRENT_RESOURCE_PATH = 1;
+  // The UI's representative Identity proto. Hosts mint this once at
+  // startup ("human/desktop-user" for desktop, "service/tui" for
+  // TUI, etc.); the type is host-supplied and only used as a Message
+  // sub-field binding.
+  UI_IDENTITY = 2;
+}
+
+// How to format a column value before display. Renderers map each
+// case to their native widget conventions.
+enum ColumnFormat {
+  // Default; render via Object.toString() / proto's default format.
+  COLUMN_FORMAT_UNSPECIFIED = 0;
+  // Plain string.
+  STRING = 1;
+  // Floating-point with two decimal places.
+  FLOAT_2DP = 2;
+  // Integer.
+  INTEGER = 3;
+  // Enum case name (e.g. "OPEN", "RESOLVED").
+  ENUM_NAME = 4;
+  // String list joined by ", ".
+  STRING_LIST = 5;
+  // google.protobuf.Timestamp rendered as ISO-8601.
+  TIMESTAMP = 6;
+}
