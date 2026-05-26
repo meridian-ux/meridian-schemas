@@ -1,0 +1,41 @@
+// Vendored minimal copy of google/api/field_behavior.proto.
+//
+// Upstream: https://github.com/googleapis/googleapis/blob/master/google/api/field_behavior.proto
+//
+// uiview.proto annotates fields with `[(google.api.field_behavior)
+// = REQUIRED]`. The Bazel build resolves this from
+// `@googleapis//google/api:field_behavior_proto`; the cargo build
+// uses this vendored stub via prost-build's include path.
+//
+// Field-behavior annotations are metadata only — they don't
+// change wire format — so a stub here is functionally equivalent
+// to the upstream copy for code generation purposes.
+
+syntax = "proto3";
+
+package google.api;
+
+import "google/protobuf/descriptor.proto";
+
+option java_package = "com.google.api";
+option java_multiple_files = true;
+option java_outer_classname = "FieldBehaviorProto";
+option go_package = "google.golang.org/genproto/googleapis/api/annotations;annotations";
+
+extend google.protobuf.FieldOptions {
+  // Annotation applied to a field. Forms an array per the
+  // upstream contract.
+  repeated FieldBehavior field_behavior = 1052;
+}
+
+enum FieldBehavior {
+  FIELD_BEHAVIOR_UNSPECIFIED = 0;
+  OPTIONAL = 1;
+  REQUIRED = 2;
+  OUTPUT_ONLY = 3;
+  INPUT_ONLY = 4;
+  IMMUTABLE = 5;
+  UNORDERED_LIST = 6;
+  NON_EMPTY_DEFAULT = 7;
+  IDENTIFIER = 8;
+}
