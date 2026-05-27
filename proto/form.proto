@@ -1,0 +1,99 @@
+// Form input primitives shared by LroPanel (RPC-driven submit) and
+// PromptPanel (standalone input collection).
+//
+// Each `FormField` carries an id + label + one input-kind variant.
+// The renderer maps the variant to native widgets (JavaFX
+// Spinner/TextField, ratatui input lines, HTML inputs, etc.) and
+// returns collected values keyed by `field_id`.
+//
+// No internal dependencies; consumed by lro.proto and prompt.proto.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "FormProto";
+
+// One input field on an LroPanel or PromptPanel form.
+//
+// `request_field` is only meaningful on LroPanel (it names the RPC
+// request field this input populates). On PromptPanel the field is
+// ignored — values are returned by `field_id`.
+message FormField {
+  // Stable identifier; referenced by FieldBinding.form_field
+  // (LroPanel) or by the caller's response map (PromptPanel).
+  string field_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Display label.
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+  // Path within the start RPC request that this field populates.
+  // Only meaningful on LroPanel forms.
+  string request_field = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional free-form help text (one-liner) shown under the field.
+  string description = 8 [(google.api.field_behavior) = OPTIONAL];
+  oneof kind {
+    // Integer spinner input.
+    IntegerSpinner integer = 4;
+    // Single-line text input.
+    TextInput text = 5;
+    // Choose one from a fixed list (e.g. CFN `AllowedValues`).
+    // Renders as a dropdown on desktop / web, a list selector
+    // on TUI.
+    EnumSelection enum_selection = 6;
+    // Text input with echo suppressed (e.g. CFN `NoEcho`).
+    MaskedInput masked = 7;
+  }
+}
+
+// Integer input with min/max/step. Renders as a Spinner on desktop, a
+// numeric input on TUI.
+message IntegerSpinner {
+  // Minimum value (inclusive).
+  int32 min = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Maximum value (inclusive).
+  int32 max = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Pre-filled value.
+  int32 default_value = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Increment for arrow keys / spinner buttons.
+  int32 step = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Single-line text input.
+message TextInput {
+  // Pre-filled value.
+  string default_value = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Regex the value must match (e.g. `"^[a-z0-9-]+$"`). Validated
+  // by the renderer on submit; renderers display
+  // `pattern_error_msg` (if set) or a generic message on failure.
+  string pattern = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Custom error message shown when `pattern` doesn't match.
+  string pattern_error_msg = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Minimum value length (inclusive).
+  int32 min_length = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Maximum value length (inclusive).
+  int32 max_length = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Single choice from a fixed list.
+message EnumSelection {
+  // Permitted values in display order.
+  repeated string allowed_values = 1 [(google.api.field_behavior) = REQUIRED];
+  // Pre-selected value. Must appear in `allowed_values` if set.
+  string default_value = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Single-line text input with echo suppressed (typed characters
+// render as `*`). Use for secrets / NoEcho CFN parameters.
+message MaskedInput {
+  // Pre-filled value (typically empty for secrets).
+  string default_value = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Regex the value must match. Same semantics as `TextInput.pattern`.
+  string pattern = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Error message on pattern violation.
+  string pattern_error_msg = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Length bounds.
+  int32 min_length = 4 [(google.api.field_behavior) = OPTIONAL];
+  int32 max_length = 5 [(google.api.field_behavior) = OPTIONAL];
+}

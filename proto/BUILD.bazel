@@ -34,7 +34,20 @@ rust_prost_transform(
 # AdhocPanel oneof variant which names a host-side handler.
 proto_library(
     name = "uiview_proto",
-    srcs = ["uiview.proto"],
+    # Split into one file per concept for clarity. The compiled
+    # output is identical (single `meridian.ui.v1` package); the
+    # split is purely an authoring convenience. Intra-package
+    # imports use `proto/<name>.proto` form to match the
+    # workspace-relative resolution Bazel applies to proto_library
+    # without a `strip_import_prefix`.
+    srcs = [
+        "rpc.proto",
+        "form.proto",
+        "table.proto",
+        "lro.proto",
+        "prompt.proto",
+        "panel.proto",
+    ],
     data = [":uiview_proto_serde_transform"],
     deps = [
         "@googleapis//google/api:field_behavior_proto",

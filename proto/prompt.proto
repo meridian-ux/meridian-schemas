@@ -1,0 +1,40 @@
+// PromptPanel — standalone input/confirmation prompt with no RPC
+// side effect. Suitable for CLI-shaped tools that gather parameters
+// or gate destructive actions through meridian's design language
+// (e.g. rules_cloudformation's `cfn_console` collecting CFN Parameter
+// values and gating change-set execution).
+//
+// Depends on form.proto (FormField).
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/form.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "PromptProto";
+
+// Standalone input/confirmation prompt. Unlike `LroPanel` (submit
+// → poll → render), this has no RPC side effect — the renderer
+// collects user input and returns it to the in-process caller as
+// `{field_id: value}`.
+message PromptPanel {
+  // Free-form description shown above the form. Multi-line is fine.
+  string description = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Form fields. Ignored if `is_confirmation` is true.
+  repeated FormField fields = 2 [(google.api.field_behavior) = OPTIONAL];
+  // If true, render as a yes/no gate. The caller gets back a single
+  // boolean value keyed by `panel_id`.
+  bool is_confirmation = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Submit/accept-button label. Default: `"Submit"` for forms,
+  // `"Yes"` for confirmations.
+  string accept_label = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Cancel/reject-button label. Default: `"Cancel"` / `"No"`.
+  string cancel_label = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional preformatted detail (rendered with monospace
+  // preservation). Use to show a CFN change-set diff above a
+  // confirmation prompt, a JSON preview, etc.
+  string detail = 6 [(google.api.field_behavior) = OPTIONAL];
+}

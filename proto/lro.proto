@@ -1,0 +1,43 @@
+// LroPanel — the "submit a long-running op, poll, render the result"
+// shape. Form inputs (form.proto) populate the start RPC; result
+// rendering reuses TablePanel (table.proto).
+//
+// Depends on rpc.proto (RpcCall), form.proto (FormField), table.proto
+// (TablePanel).
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/form.proto";
+import "proto/rpc.proto";
+import "proto/table.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "LroProto";
+
+// "Submit + poll WaitOperation + render the response" shape. Reserved
+// for the second migration round; declared now so renderers can stub
+// the variant without proto churn later.
+message LroPanel {
+  // Initial RPC. Must return `google.longrunning.Operation`.
+  RpcCall start = 1 [(google.api.field_behavior) = REQUIRED];
+  // Fully-qualified proto type name (as it appears in
+  // Operation.metadata.type_url after the URL prefix) the metadata
+  // unpacks to, e.g. "pinax.knowledge.v1.GenerateKnowledgeProbesMetadata".
+  string metadata_type = 2 [(google.api.field_behavior) = REQUIRED];
+  // Same, for the final Operation.response.
+  string response_type = 3 [(google.api.field_behavior) = REQUIRED];
+  // Label for the run button.
+  string run_button_label = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Form inputs the operator fills before submitting.
+  repeated FormField inputs = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional post-LRO sync call that takes the LRO response and
+  // returns the data to feed into `result`. For example
+  // KnowledgeAssessmentService: Generate (LRO) → Assess (sync).
+  RpcCall finalize = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Table-shaped result rendering. If `finalize` is set, this
+  // describes the finalize response; otherwise the LRO response.
+  TablePanel result = 7 [(google.api.field_behavior) = OPTIONAL];
+}

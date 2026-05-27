@@ -1,0 +1,74 @@
+// Cross-message RPC plumbing for meridian descriptors.
+//
+// `RpcCall` names the gRPC method a panel fires. `FieldBinding`
+// describes how to populate the request message from runtime
+// context — the open document, the UI's Identity, the selected
+// table row, a form input value, or a literal.
+//
+// This file is the lowest layer of the descriptor proto suite; it
+// has no internal dependencies. `table.proto`, `lro.proto`, and
+// `form.proto` all build on it.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "RpcProto";
+
+// One gRPC call: which service, which method, how to build the
+// request from runtime context (the open PDF, the UI's Identity, the
+// selected row, form input values).
+message RpcCall {
+  // Fully-qualified service name, e.g. "pinax.claims.v1.ClaimsService".
+  string service = 1 [(google.api.field_behavior) = REQUIRED];
+  // Method name on the service, e.g. "ListClaims".
+  string method = 2 [(google.api.field_behavior) = REQUIRED];
+  // Bindings populate request fields from runtime context.
+  repeated FieldBinding bindings = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One assignment: "set request field X from source Y".
+message FieldBinding {
+  // Path within the RPC request message, e.g. "pdf_path" or
+  // "decider.identity_id".
+  string request_field = 1 [(google.api.field_behavior) = REQUIRED];
+  // Where to source the value from.
+  oneof source {
+    // Pull from the runtime context (current PDF path, UI identity).
+    ContextSource context = 2;
+    // Pull a field from the selected row (only valid for row actions).
+    string row_field = 3;
+    // Pull from a form input by field_id (only valid in LRO inputs).
+    string form_field = 4;
+    // Hard-coded literal value (interpreted by request_field's type).
+    string literal = 5;
+    // Nested binding set — for building sub-messages (e.g. assemble
+    // a `decider` Identity from several scalar bindings).
+    NestedBinding nested = 6;
+  }
+}
+
+// Sub-message binding. Each entry sets one field inside the parent's
+// sub-message at `request_field`.
+message NestedBinding {
+  // Field bindings populating the sub-message.
+  repeated FieldBinding fields = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Sources the renderer can pull binding values from at call time.
+enum ContextSource {
+  // Default; unused on the wire.
+  CONTEXT_SOURCE_UNSPECIFIED = 0;
+  // The currently active resource path (string). Hosts define what
+  // this means: in Pinax it's the open PDF's filesystem path; in
+  // other hosts it could be a URI, an opaque resource id, etc.
+  CURRENT_RESOURCE_PATH = 1;
+  // The UI's representative Identity proto. Hosts mint this once at
+  // startup ("human/desktop-user" for desktop, "service/tui" for
+  // TUI, etc.); the type is host-supplied and only used as a Message
+  // sub-field binding.
+  UI_IDENTITY = 2;
+}

@@ -1,0 +1,86 @@
+// PanelDescriptor — meridian's top-level descriptor for one
+// right-pane view. Selects between the available panel shapes via
+// the `body` oneof.
+//
+// Renderers route by `panel_id`. The four shapes (table / lro /
+// prompt / adhoc) live in their own files; this file just composes
+// them under one descriptor.
+//
+// Depends on table.proto, lro.proto, prompt.proto.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/lro.proto";
+import "proto/prompt.proto";
+import "proto/table.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "PanelProto";
+
+// PanelDescriptor: a platform-neutral description of one right-pane
+// view. `panel_id` is the routing key; `body` selects which shape
+// (table / lro / prompt / adhoc) the renderer should use.
+//
+// Meridian ships three host renderers consuming the same descriptors:
+//   - JavaFX desktop (meridian.ui.javafx)
+//   - Web via web components (meridian.ui in TypeScript)
+//   - Rust TUI via ratatui (meridian.ui in Rust)
+//
+// Bespoke layouts (SPARQL editors, image viewers, document trees)
+// that don't fit any shape variant stay as hand-coded host classes
+// behind the `adhoc` oneof variant — the framework explicitly
+// accommodates that.
+message PanelDescriptor {
+  // Stable identifier ("claims", "review_tickets", ...). Renderers
+  // use this as the routing key and for telemetry.
+  string panel_id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Display title shown at the top of the panel.
+  string title = 2 [(google.api.field_behavior) = REQUIRED];
+  // Shape selector. Each variant has its own renderer.
+  oneof body {
+    // Fetch a list, render a table.
+    TablePanel table = 3;
+    // Long-running operation driver. (Reserved; renderer support
+    // arrives alongside the first LRO migration.)
+    LroPanel lro = 4;
+    // Bespoke host-supplied layout (SPARQL editor, image viewer,
+    // tree, etc.). The host looks up `adhoc.handler_id` in its own
+    // registry and instantiates the corresponding hand-coded view.
+    AdhocPanel adhoc = 5;
+    // Standalone input/confirmation prompt. No RPC side effect;
+    // values are returned to the in-process caller. Used by
+    // CLI-shaped tools (e.g. rules_cloudformation's cfn_console)
+    // that need to collect parameters or gate destructive actions
+    // through meridian's design language.
+    PromptPanel prompt = 6;
+  }
+}
+
+// A reload-friendly bundle of `PanelDescriptor`s authored as a single
+// textproto, compiled to `.binpb` by the `meridian_panel_bundle`
+// Bazel rule, and loaded by every renderer at startup.
+//
+// The host runtime watches the on-disk `.binpb` (dev workflow: edit
+// textproto, save, see panels refresh) and re-publishes the parsed
+// bundle to its renderer. In prod the same code path is driven by an
+// admin RPC.
+message PanelBundle {
+  // Display version. Renderers log this on reload so changes are
+  // observable in support sessions; the runtime does no semver work.
+  string version = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Panels in display order. Renderers route to one of these by
+  // matching `panel_id`.
+  repeated PanelDescriptor panels = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Host-specific layout. The descriptor only names the handler; the
+// host's adhoc registry supplies the implementation. Use this for
+// bespoke views (code editors, tree views, image viewers) that the
+// table/LRO shapes can't express cleanly.
+message AdhocPanel {
+  // Identifier the host looks up in its adhoc registry.
+  string handler_id = 1 [(google.api.field_behavior) = REQUIRED];
+}
