@@ -6,12 +6,13 @@
 // prompt / adhoc) live in their own files; this file just composes
 // them under one descriptor.
 //
-// Depends on table.proto, lro.proto, prompt.proto.
+// Depends on table.proto, lro.proto, prompt.proto, llm_prompt.proto.
 syntax = "proto3";
 
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/llm_prompt.proto";
 import "proto/lro.proto";
 import "proto/prompt.proto";
 import "proto/table.proto";
@@ -56,6 +57,12 @@ message PanelDescriptor {
     // that need to collect parameters or gate destructive actions
     // through meridian's design language.
     PromptPanel prompt = 6;
+    // Author + parameter-fill UI for a templated LLM prompt
+    // (Anthropic Messages, OpenAI Chat, etc.). Distinct from
+    // PromptPanel: the slots are the inputs and the rendered
+    // prompt is the output. Pair with LroPanel when the consumer
+    // wants the renderer to also drive execution.
+    LlmPromptPanel llm_prompt = 7;
   }
 }
 

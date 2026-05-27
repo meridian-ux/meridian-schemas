@@ -46,6 +46,7 @@ proto_library(
         "table.proto",
         "lro.proto",
         "prompt.proto",
+        "llm_prompt.proto",
         "panel.proto",
     ],
     data = [":uiview_proto_serde_transform"],

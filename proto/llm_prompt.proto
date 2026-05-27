@@ -1,0 +1,138 @@
+// LlmPromptPanel — author + preview + parameter-fill UI for a
+// templated LLM prompt.
+//
+// Distinct from PromptPanel (prompt.proto): that one collects UI
+// input from a human and returns the values to the in-process
+// caller. *This* one models an LLM-targeted prompt template
+// (system + user messages with parameter slots) — the human
+// interacts with the SLOTS via FormField widgets, and the panel
+// shows the rendered prompt + (optionally) drives execution.
+//
+// Why a separate concept:
+//
+//   - System + user templates are first-class fields, not free
+//     `description` text. Renderers can syntax-highlight slot
+//     tokens, line-number, fold, etc.
+//   - The slot vocabulary lives alongside the templates so
+//     consumers can validate that every `{{slot}}` token in the
+//     template resolves to a declared ParameterSlot.
+//   - The model metadata (provider / model id / max_tokens /
+//     temperature) is structured. Renderers can display it as
+//     chips; execution code (the bit that actually calls the
+//     Anthropic Messages API or equivalent) can consume it
+//     without re-parsing free-form description text.
+//   - Structured-output prompts (LLMs returning JSON) declare
+//     their expected shape via `output_json_schema`, so the
+//     renderer can validate the response before handing it to
+//     downstream consumers.
+//
+// Execution model: v0 is preview + parameter-fill only. To
+// actually invoke the API, compose with LroPanel (lro.proto) —
+// the rendered prompt becomes input to a start RPC that drives
+// the long-running call.
+//
+// Depends on form.proto (FormField).
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/form.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "LlmPromptProto";
+
+// One LLM prompt template + the form that fills its slots.
+//
+// Template syntax: `{{slot_name}}` placeholders. Substitution is
+// purely textual (no recursion, no escaping policy beyond the
+// slot value itself). The renderer is responsible for producing
+// the rendered prompt and (optionally) handing it off to an
+// execution path.
+message LlmPromptPanel {
+  // System prompt template (used as the `system` parameter on
+  // Anthropic's Messages API and equivalent slots elsewhere). May
+  // contain `{{slot}}` references resolved from `slots`.
+  //
+  // Optional — some prompts only define a user message and rely
+  // on the provider's default system prompt.
+  string system_template = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // User prompt template (sent as the first `user` message). May
+  // contain `{{slot}}` references.
+  string user_template = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Slots referenced inside `system_template` and `user_template`.
+  // Every `{{name}}` token in either template SHOULD resolve to
+  // a slot declared here; renderers MAY surface unresolved-token
+  // warnings.
+  repeated ParameterSlot slots = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Hint about the model + decoding the prompt is designed for.
+  // Renderers display this as informative metadata; execution
+  // paths use it as the default config when invoking the API.
+  ModelHint model_hint = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // If the prompt expects structured JSON output, the consumer
+  // validates the response against this schema (parsed as JSON
+  // Schema). Stored as a JSON string so we don't have to model
+  // JSON Schema in protobuf.
+  string output_json_schema = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional free-form description shown above the template
+  // editor. Use for curator notes (when to use this prompt, what
+  // it's tuned for, known limitations).
+  string description = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One parameter slot referenced inside a template as
+// `{{slot_name}}`. The `field` describes the input widget that
+// fills it (reusing the same FormField primitives PromptPanel +
+// LroPanel use).
+message ParameterSlot {
+  // Slot identifier — must match the `{{name}}` token in the
+  // template body.
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // FormField driving input collection for this slot. The
+  // `field_id` inside SHOULD equal `name` here; renderers MAY
+  // enforce that.
+  FormField field = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Render the slot input as a multi-line editor rather than the
+  // single-line widget the FormField kind would default to. Use
+  // for slots that hold source code, paragraphs of context, or
+  // pasted JSON. Only honored for `text` (and `masked`) field
+  // kinds.
+  bool multi_line = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // For `multi_line = true` slots only: visible row count. Zero
+  // means renderer-default.
+  int32 rows = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Informational metadata about the model + decoding the prompt is
+// designed for. Renderers display these as chips next to the
+// title; execution paths consume them when actually calling the
+// provider API.
+message ModelHint {
+  // Provider tag — "anthropic" / "openai" / "ollama" / "local" /
+  // free-form. Renderers route by exact string match for icon
+  // selection; unknown providers render with a generic chip.
+  string provider = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Model identifier within that provider (e.g.,
+  // "claude-sonnet-4-5", "gpt-4o", "llama-3.1-70b").
+  string model = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Max output tokens. Zero means provider default.
+  int32 max_tokens = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Decoding temperature. Zero means provider default; explicit
+  // zero (the value 0.0 vs unset) is indistinguishable in
+  // proto3 — consumers wanting "explicit deterministic" should
+  // set this to the smallest positive value or carry the
+  // explicit flag in their own runtime layer.
+  float temperature = 4 [(google.api.field_behavior) = OPTIONAL];
+}
