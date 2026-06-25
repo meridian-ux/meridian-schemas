@@ -2,6 +2,7 @@ load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_proto_grpc_java//:defs.bzl", "java_grpc_library", "java_proto_library")
 load("@rules_rust_prost//:defs.bzl", "rust_prost_transform")
+load("@rules_swift//proto:proto.bzl", "swift_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,13 +42,13 @@ proto_library(
     # workspace-relative resolution Bazel applies to proto_library
     # without a `strip_import_prefix`.
     srcs = [
-        "rpc.proto",
         "form.proto",
-        "table.proto",
-        "lro.proto",
-        "prompt.proto",
         "llm_prompt.proto",
+        "lro.proto",
         "panel.proto",
+        "prompt.proto",
+        "rpc.proto",
+        "table.proto",
     ],
     data = [":uiview_proto_serde_transform"],
     deps = [
@@ -63,6 +64,20 @@ java_proto_library(
         "@googleapis//google/api:api_java_proto",
         "@protobuf//:protobuf_java",
     ],
+)
+
+# swift-protobuf types for meridian.ui.v1, consumed by the SwiftUI renderer
+# (//swift:MeridianUI). The target name is the generated Swift MODULE name
+# (`import MeridianProto`), so BundleLoader.swift can decode the binpb. The
+# default compiler (//proto/compilers:swift_proto) is swift-protobuf only
+# (no gRPC plugin) — the renderer's transport is host-supplied. Requires a
+# full Xcode on the build host (swiftc).
+swift_proto_library(
+    name = "MeridianProto",
+    # Pin the generated Swift module name; otherwise rules_swift derives it from
+    # the label (e.g. proto_MeridianProto) and `import MeridianProto` fails.
+    module_name = "MeridianProto",
+    protos = [":uiview_proto"],
 )
 
 # Java gRPC stubs for google.longrunning.Operations, generated via the

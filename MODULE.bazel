@@ -1,6 +1,6 @@
 module(
     name = "meridian",
-    version = "0.2.1",
+    version = "0.2.2",
     compatibility_level = 1,
 )
 
@@ -34,6 +34,21 @@ bazel_dep(name = "rules_proto_grpc_java", version = "5.8.0")
 bazel_dep(name = "protobuf", version = "33.4")
 bazel_dep(name = "googleapis", version = "0.0.0-20260422-20ac242a")
 bazel_dep(name = "googleapis-java", version = "1.1.5")
+
+# Swift — SwiftUI desktop renderer (swift/MeridianUI) + swift-protobuf
+# descriptor codegen (proto:MeridianProto). rules_swift resolves from BCR;
+# it pulls apple_support, whose CC toolchain we register so swiftc builds on
+# the darwin host (it must outrank Bazel's autoconf "local" toolchain, else
+# rules_swift fails with "Invalid target triple: local"). swift_* targets
+# only build on demand, so non-Swift consumers (e.g. Pinax's Java surface)
+# pay nothing at build time. Requires a full Xcode on the build host.
+bazel_dep(name = "rules_swift", version = "3.6.1")
+bazel_dep(name = "apple_support", version = "2.2.0", repo_name = "build_bazel_apple_support")
+
+apple_cc = use_extension("@build_bazel_apple_support//crosstool:setup.bzl", "apple_cc_configure_extension")
+use_repo(apple_cc, "local_config_apple_cc_toolchains")
+
+register_toolchains("@local_config_apple_cc_toolchains//:all")
 
 # rules_vite is dev-only: it's used to wire vitest_test targets in
 # tests/BUILD.bazel. Consumers of meridian don't need it.
@@ -88,7 +103,11 @@ maven.install(
         "org.openjfx:javafx-graphics:jar:mac-aarch64:21.0.5",
         "org.openjfx:javafx-controls:jar:mac-aarch64:21.0.5",
     ],
-    known_contributing_modules = ["meridian", "protobuf", "rules_proto_grpc_java"],
+    known_contributing_modules = [
+        "meridian",
+        "protobuf",
+        "rules_proto_grpc_java",
+    ],
     repositories = [
         "https://repo1.maven.org/maven2",
     ],
@@ -99,11 +118,12 @@ use_repo(maven, "maven")
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
     edition = "2021",
-    versions = ["1.85.0"],
     # wasm32 target needed by rules_rust_wasm_bindgen.
     extra_target_triples = ["wasm32-unknown-unknown"],
+    versions = ["1.85.0"],
 )
 use_repo(rust, "rust_toolchains")
+
 register_toolchains("@rust_toolchains//:all")
 
 # Crate-universe pulls dependencies declared in rust/Cargo.toml +
