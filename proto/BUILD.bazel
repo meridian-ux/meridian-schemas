@@ -6,6 +6,15 @@ load("@rules_swift//proto:proto.bzl", "swift_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
+# The raw schema sources. Exported so skin modules (e.g. @brand) can run
+# `protoc --encode=meridian.theme.v1.Theme theme.proto` over a Theme textproto
+# to emit a fastverk.binpb / fastverk.json artifact, without a Bazel codegen
+# dep on the renderers. theme.proto has no imports, so it stands alone.
+exports_files(
+    ["theme.proto"],
+    visibility = ["//visibility:public"],
+)
+
 # Adds `#[derive(::serde::Serialize, ::serde::Deserialize)]` to every
 # prost-generated type for meridian.ui.v1 so the wasm-bindgen surface
 # (//rust/uiview:uiview_wasm_lib) can serde_wasm_bindgen-round-trip
@@ -64,6 +73,42 @@ java_proto_library(
         "@googleapis//google/api:api_java_proto",
         "@protobuf//:protobuf_java",
     ],
+)
+
+# Meridian's renderer-agnostic style layer (meridian.theme.v1). A SEPARATE
+# proto_library from uiview_proto on purpose: semantics and style are
+# orthogonal, so a renderer (or a skin module like @brand) can depend on the
+# Theme contract without pulling the panel descriptors, and vice versa. Per-
+# language bindings (java/swift/rust) are added alongside each renderer as it
+# grows a theme binding; the web binding is CSS + a tiny TS helper under
+# //theme/web (no generated proto needed there).
+proto_library(
+    name = "theme_proto",
+    srcs = ["theme.proto"],
+)
+
+# Java types for meridian.theme.v1, consumed by the JavaFX renderer's theme
+# binding (//java/javafx:MeridianTheme -> JavaFX CSS). Mirrors
+# uiview_java_proto_library; theme_proto has no deps (pure scalar fields) so
+# only the protobuf runtime is needed.
+java_proto_library(
+    name = "theme_java_proto_library",
+    protos = [":theme_proto"],
+    deps = [
+        ":theme_proto",
+        "@protobuf//:protobuf_java",
+    ],
+)
+
+# swift-protobuf types for meridian.theme.v1, consumed by the SwiftUI
+# renderer's theme binding (//swift:MeridianUI). Same toolchain/pattern as
+# MeridianProto (swift-protobuf only, no gRPC plugin); the module name is
+# pinned so `import MeridianThemeProto` resolves. Requires a full Xcode on
+# the build host (swiftc).
+swift_proto_library(
+    name = "MeridianThemeProto",
+    module_name = "MeridianThemeProto",
+    protos = [":theme_proto"],
 )
 
 # swift-protobuf types for meridian.ui.v1, consumed by the SwiftUI renderer

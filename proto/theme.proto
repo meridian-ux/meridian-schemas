@@ -1,0 +1,69 @@
+// Theme — meridian's renderer-agnostic style layer.
+//
+// Semantics and style are orthogonal in meridian: `meridian.ui.v1`
+// (panel.proto and friends) says what a view *is and does* and carries
+// NO style; `meridian.theme.v1` (this file) says how it *looks* and
+// carries NO semantics. A renderer binds (PanelDescriptor, Theme) ->
+// native UI, mapping these tokens to its platform: web CSS custom
+// properties, ratatui Style, JavaFX CSS, SwiftUI. One Theme drives every
+// renderer, so a single "skin" (e.g. the fastverk brand identity) is
+// expressed once and rendered consistently everywhere.
+//
+// A Theme is pure data — author it as a textproto / binpb and ship it as
+// a module (the way @brand ships the fastverk skin), independent of both
+// the descriptors and the renderers.
+syntax = "proto3";
+
+package meridian.theme.v1;
+
+option java_multiple_files = true;
+option java_package = "meridian.theme.v1";
+option java_outer_classname = "ThemeProto";
+
+// A complete, named set of design tokens. `dark` is optional; when a
+// renderer is in dark mode and `dark` is unset it falls back to `light`.
+message Theme {
+  // Stable id, e.g. "fastverk" or "neutral".
+  string id = 1;
+  string display_name = 2;
+  Palette light = 3;
+  Palette dark = 4;
+  Typography typography = 5;
+  Metrics metrics = 6;
+}
+
+// Colors as CSS-style hex (`#RRGGBB` / `#RRGGBBAA`). Hex is the neutral
+// interchange form; each renderer parses it to its native color type
+// (web uses it directly, ratatui -> Color::Rgb, JavaFX -> Color.web,
+// SwiftUI -> Color(hex)). Roles are semantic, not literal — a renderer
+// never sees "amber", only "accent".
+message Palette {
+  string bg = 1;             // app / canvas background
+  string surface = 2;        // panel / card surface
+  string fg = 3;             // primary text
+  string muted = 4;          // secondary / meta text
+  string border = 5;         // hairlines, table borders
+  string accent = 6;         // links, active/selected, primary action
+  string accent_strong = 7;  // accent gradient end / pressed state
+  string on_accent = 8;      // text/icon on an accent fill
+  string danger = 9;
+  string success = 10;
+  string code_bg = 11;       // inline/code-block background
+  string code_fg = 12;       // code foreground
+}
+
+message Typography {
+  string sans = 1;            // UI font stack
+  string mono = 2;            // code font stack
+  uint32 base_size_px = 3;    // body size (e.g. 14)
+  uint32 heading_weight = 4;  // e.g. 600
+  uint32 body_weight = 5;     // e.g. 400
+  // Heading letter-spacing in em as a string (e.g. "-0.015"), since em
+  // is fractional and renderer-mapped.
+  string heading_tracking = 6;
+}
+
+message Metrics {
+  uint32 radius_px = 1;       // default corner radius
+  uint32 unit_px = 2;         // base spacing unit (e.g. 4)
+}
