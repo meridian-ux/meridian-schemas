@@ -1,0 +1,25 @@
+load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+
+package(default_visibility = ["//visibility:public"])
+
+# @meridian/schemas/uiview — the framework-neutral WebRenderer seam. Pure
+# interfaces over the canonical @meridian/proto-ts PanelDescriptor + Theme; no
+# renderer, no React, no wasm. meridian-web AND meridian-web-react implement it,
+# so both depend on this module rather than on each other. Emits .js + .d.ts
+# alongside the sources (out_dir "."). Packaged as @meridian/schemas in
+# //:BUILD.bazel (so the package paths stay rooted at src/uiview/).
+ts_project(
+    name = "seam",
+    srcs = [
+        "index.ts",
+        "transport.ts",
+        "web_renderer.ts",
+    ],
+    declaration = True,
+    out_dir = ".",
+    transpiler = "tsc",
+    tsconfig = "tsconfig.json",
+    deps = [
+        "//:node_modules/@meridian/proto-ts",
+    ],
+)

@@ -1,31 +1,25 @@
 {
-  "name": "@meridian/core",
+  "name": "@meridian/schemas",
   "version": "0.1.0",
   "private": true,
-  "description": "Lightweight web component runtime: typed worker controller, DOM patch helpers, template loader, UI kit CSS, and Bazel rules for declarative component graphs.",
+  "description": "The framework- and brand-neutral root of the meridian design language: the WebRenderer seam (mount/update/unmount + transport contracts) over the canonical meridian.ui.v1 PanelDescriptor + meridian.theme.v1 Theme. Renderers implement the seam; emitters (aion) produce descriptors. Ships next to @meridian/proto-ts (the generated types, resolved via the Bazel first-party link).",
   "type": "module",
-  "main": "./src/index.js",
-  "types": "./src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
-      "import": "./src/index.js"
+      "types": "./src/uiview/index.d.ts",
+      "import": "./src/uiview/index.js"
     },
     "./uiview": {
       "types": "./src/uiview/index.d.ts",
       "import": "./src/uiview/index.js"
-    },
-    "./*": {
-      "types": "./src/*.d.ts",
-      "import": "./src/*.js"
     }
   },
   "files": [
-    "src/**/*.ts",
-    "src/**/*.js",
-    "src/**/*.d.ts",
-    "src/**/*.json",
+    "src/uiview/**/*.ts",
+    "src/uiview/**/*.js",
+    "src/uiview/**/*.d.ts",
     "bazel/**/*.bzl",
+    "proto/**/*.proto",
     "BUILD.bazel",
     "MODULE.bazel",
     "README.md"
@@ -35,7 +29,6 @@
   },
   "devDependencies": {
     "@bufbuild/protoc-gen-es": "2.12.1",
-    "vitest": "2.1.4",
     "typescript": "5.6.2"
   },
   "pnpm": {

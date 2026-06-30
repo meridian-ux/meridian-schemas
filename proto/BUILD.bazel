@@ -1,17 +1,12 @@
 load("@aspect_rules_js//npm:defs.bzl", "npm_package")
 load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
-load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
-load("@rules_proto_grpc_java//:defs.bzl", "java_grpc_library", "java_proto_library")
-load("@rules_rust_prost//:defs.bzl", "rust_prost_transform")
-load("@rules_swift//proto:proto.bzl", "swift_proto_library")
 load("//bazel:proto_es.bzl", "proto_es")
 
 package(default_visibility = ["//visibility:public"])
 
 # TypeScript (protobuf-es) for meridian.ui.v1 — the PanelDescriptor contract,
-# the canonical web types that replace the hand-written, drift-prone
-# src/uiview/types.ts. One <name>_pb.ts per source (panel_pb.ts, table_pb.ts, …).
+# the canonical web types. One <name>_pb.ts per source (panel_pb.ts, table_pb.ts, …).
 proto_es(
     name = "uiview_es",
     # field_behavior is imported by every uiview file (as a field annotation)
@@ -20,17 +15,16 @@ proto_es(
     proto = ":uiview_proto",
 )
 
-# TypeScript (protobuf-es) for meridian.theme.v1 — the Theme contract, the
-# canonical web types behind theme/web/theme.ts's hand interface.
+# TypeScript (protobuf-es) for meridian.theme.v1 — the Theme contract.
 proto_es(
     name = "theme_es",
     proto = ":theme_proto",
 )
 
 # Compile the generated protobuf-es TypeScript into .js + .d.ts — the
-# @meridian/proto-ts surface (PanelDescriptor, Theme, …) the web renderers and
-# aion consume. root_dir/out_dir = "es" so the emitted tree mirrors the imports
-# (proto/*_pb.js, google/api/field_behavior_pb.js).
+# @meridian/proto-ts surface (PanelDescriptor, Theme, …) the renderers and aion
+# consume. root_dir = "es" (the proto_es out tree) ≠ out_dir = "lib" so the emit
+# mirrors the imports (proto/*_pb.js, google/api/field_behavior_pb.js).
 ts_project(
     name = "proto_ts",
     srcs = [
@@ -73,41 +67,20 @@ exports_files(
     visibility = ["//visibility:public"],
 )
 
-# Adds `#[derive(::serde::Serialize, ::serde::Deserialize)]` to every
-# prost-generated type for meridian.ui.v1 so the wasm-bindgen surface
-# (//rust/uiview:uiview_wasm_lib) can serde_wasm_bindgen-round-trip
-# JSON-shaped PanelDescriptors across the JS boundary. The `deps`
-# attribute hands the serde crate to the prost-generated rust target
-# so the derives resolve.
-rust_prost_transform(
-    name = "uiview_proto_serde_transform",
-    prost_opts = [
-        "type_attribute=.=#[derive(::serde::Serialize\\, ::serde::Deserialize)]",
-    ],
-    deps = ["@crates//:serde"],
-)
-
 # Meridian's platform-neutral UI view descriptors.
 #
-# A PanelDescriptor captures everything a renderer needs to host one
-# right-pane view: which RPC to call, how to map the response into
-# rows, what columns to display, what actions to expose, what type
-# conversions to apply. Three renderers will consume the same protos:
-#
-#   - JavaFX desktop UI (under //java/javafx)
-#   - Web (TypeScript / web components) — staged for stage 2
-#   - Rust TUI (ratatui) — staged for stage 3
-#
-# Bespoke layouts that don't fit any shape variant route through the
-# AdhocPanel oneof variant which names a host-side handler.
+# A PanelDescriptor captures everything a renderer needs to host one right-pane
+# view: which RPC to call, how to map the response into rows, what columns to
+# display, what actions to expose, what type conversions to apply. Every
+# renderer (meridian-web, meridian-web-react, meridian-tui, meridian-javafx,
+# meridian-swiftui) consumes the same protos; the language bindings live with
+# each renderer repo. Bespoke layouts route through the AdhocPanel oneof variant
+# which names a host-side handler.
 proto_library(
     name = "uiview_proto",
-    # Split into one file per concept for clarity. The compiled
-    # output is identical (single `meridian.ui.v1` package); the
-    # split is purely an authoring convenience. Intra-package
-    # imports use `proto/<name>.proto` form to match the
-    # workspace-relative resolution Bazel applies to proto_library
-    # without a `strip_import_prefix`.
+    # Split into one file per concept for clarity. The compiled output is
+    # identical (single `meridian.ui.v1` package); intra-package imports use
+    # `proto/<name>.proto` form to match Bazel's workspace-relative resolution.
     srcs = [
         "form.proto",
         "gallery.proto",
@@ -118,82 +91,16 @@ proto_library(
         "rpc.proto",
         "table.proto",
     ],
-    data = [":uiview_proto_serde_transform"],
     deps = [
         "@googleapis//google/api:field_behavior_proto",
-    ],
-)
-
-java_proto_library(
-    name = "uiview_java_proto_library",
-    protos = [":uiview_proto"],
-    deps = [
-        ":uiview_proto",
-        "@googleapis//google/api:api_java_proto",
-        "@protobuf//:protobuf_java",
     ],
 )
 
 # Meridian's renderer-agnostic style layer (meridian.theme.v1). A SEPARATE
 # proto_library from uiview_proto on purpose: semantics and style are
 # orthogonal, so a renderer (or a skin module like @brand) can depend on the
-# Theme contract without pulling the panel descriptors, and vice versa. Per-
-# language bindings (java/swift/rust) are added alongside each renderer as it
-# grows a theme binding; the web binding is CSS + a tiny TS helper under
-# //theme/web (no generated proto needed there).
+# Theme contract without pulling the panel descriptors, and vice versa.
 proto_library(
     name = "theme_proto",
     srcs = ["theme.proto"],
-)
-
-# Java types for meridian.theme.v1, consumed by the JavaFX renderer's theme
-# binding (//java/javafx:MeridianTheme -> JavaFX CSS). Mirrors
-# uiview_java_proto_library; theme_proto has no deps (pure scalar fields) so
-# only the protobuf runtime is needed.
-java_proto_library(
-    name = "theme_java_proto_library",
-    protos = [":theme_proto"],
-    deps = [
-        ":theme_proto",
-        "@protobuf//:protobuf_java",
-    ],
-)
-
-# swift-protobuf types for meridian.theme.v1, consumed by the SwiftUI
-# renderer's theme binding (//swift:MeridianUI). Same toolchain/pattern as
-# MeridianProto (swift-protobuf only, no gRPC plugin); the module name is
-# pinned so `import MeridianThemeProto` resolves. Requires a full Xcode on
-# the build host (swiftc).
-swift_proto_library(
-    name = "MeridianThemeProto",
-    module_name = "MeridianThemeProto",
-    protos = [":theme_proto"],
-)
-
-# swift-protobuf types for meridian.ui.v1, consumed by the SwiftUI renderer
-# (//swift:MeridianUI). The target name is the generated Swift MODULE name
-# (`import MeridianProto`), so BundleLoader.swift can decode the binpb. The
-# default compiler (//proto/compilers:swift_proto) is swift-protobuf only
-# (no gRPC plugin) — the renderer's transport is host-supplied. Requires a
-# full Xcode on the build host (swiftc).
-swift_proto_library(
-    name = "MeridianProto",
-    # Pin the generated Swift module name; otherwise rules_swift derives it from
-    # the label (e.g. proto_MeridianProto) and `import MeridianProto` fails.
-    module_name = "MeridianProto",
-    protos = [":uiview_proto"],
-)
-
-# Java gRPC stubs for google.longrunning.Operations, generated via the
-# rules_proto_grpc_java toolchain. We can't depend on googleapis-grpc-
-# java directly because it ships a grpc-java compiler plugin that
-# doesn't compile against our pinned protobuf version — so we generate
-# the stubs locally against our toolchain. Same pattern Pinax uses.
-java_grpc_library(
-    name = "longrunning_java_grpc_library",
-    protos = ["@googleapis//google/longrunning:operations_proto"],
-    deps = [
-        "@googleapis//google/longrunning:longrunning_java_proto",
-        "@maven//:com_google_api_grpc_proto_google_common_protos",
-    ],
 )

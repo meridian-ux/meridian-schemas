@@ -1,0 +1,9 @@
+package(default_visibility = ["//visibility:public"])
+
+# Makes //bazel a package so //bazel:proto_es.bzl and //bazel:protoc_prebuilt.bzl
+# load. The .bzl files themselves carry the TypeScript-codegen rule (proto_es)
+# and the prebuilt-protoc module extension.
+exports_files([
+    "proto_es.bzl",
+    "protoc_prebuilt.bzl",
+])

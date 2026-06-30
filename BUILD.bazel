@@ -6,29 +6,30 @@ package(default_visibility = ["//visibility:public"])
 npm_link_all_packages(name = "node_modules")
 
 # First-party: link the generated @meridian/proto-ts package into the workspace
-# node_modules so first-party code resolves `@meridian/proto-ts/...` the same way
-# it resolves third-party packages.
+# node_modules so the seam (and, in consumer repos, the renderers) resolve
+# `@meridian/proto-ts/...` the same way they resolve third-party packages.
 npm_link_package(
     name = "node_modules/@meridian/proto-ts",
     src = "//proto:proto_ts_pkg",
 )
 
-# Assemble @meridian/core (this package: package.json + the compiled src/ surface)
-# and link it first-party, so the React renderer (//web-react) resolves
-# `@meridian/core/uiview` (the WebRenderer seam) like any other package.
+# Assemble @meridian/schemas (this package's package.json + the compiled seam
+# under src/uiview/) and link it first-party. Defined here, in the root package,
+# so npm_package's default root_paths preserve the src/uiview/ layout the
+# "./uiview" export points at.
 npm_package(
-    name = "core_pkg",
+    name = "schemas_pkg",
     srcs = [
         "package.json",
-        "//src:core",
+        "//src/uiview:seam",
     ],
-    package = "@meridian/core",
+    package = "@meridian/schemas",
     visibility = ["//visibility:public"],
 )
 
 npm_link_package(
-    name = "node_modules/@meridian/core",
-    src = ":core_pkg",
+    name = "node_modules/@meridian/schemas",
+    src = ":schemas_pkg",
 )
 
 exports_files([
