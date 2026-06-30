@@ -1,0 +1,50 @@
+// GalleryPanel — "fetch a list, render a grid of cards" shape.
+//
+// Like TablePanel, an RPC populates a list of rows; instead of a table, the
+// renderer shows a responsive grid of cards. CardSpec maps each row's fields to
+// the card's display slots (title / subtitle / icon / status badge / action).
+// Cards are clickable: `href_field` gives a URL to navigate to (e.g. an OAuth
+// connect endpoint), which is what the integrations gallery uses.
+//
+// Depends on rpc.proto for `RpcCall`.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/rpc.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "GalleryProto";
+
+// "Fetch a list per current document, render a card grid" shape.
+message GalleryPanel {
+  // RPC to call when this panel becomes active.
+  RpcCall populate = 1 [(google.api.field_behavior) = REQUIRED];
+  // Path within the response to the row list (a `repeated` field).
+  string rows_field = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional placeholder displayed when the list is empty.
+  string placeholder = 3 [(google.api.field_behavior) = OPTIONAL];
+  // How to map a row to a card.
+  CardSpec card = 4 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Maps a row to a card. Each *_field is a ProtoPaths dotted path within the row;
+// empty paths render as empty slots. Icons are passed through as a key the host
+// resolves to a vector glyph (the SVG set lives with the renderer), keeping the
+// descriptor free of markup.
+message CardSpec {
+  // Path to the card's primary label (e.g. "name").
+  string title_field = 1 [(google.api.field_behavior) = REQUIRED];
+  // Path to a secondary line / blurb.
+  string subtitle_field = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Path to an icon key the host maps to a vector glyph (e.g. "github").
+  string icon_field = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Path to a status/badge string (e.g. "connected"); empty = no badge.
+  string status_field = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Path to a URL the card navigates to on click (e.g. a connect endpoint).
+  string href_field = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Path to the action label shown on the card (e.g. "Connect", "Manage").
+  string action_label_field = 6 [(google.api.field_behavior) = OPTIONAL];
+}

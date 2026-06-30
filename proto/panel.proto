@@ -12,6 +12,7 @@ syntax = "proto3";
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/gallery.proto";
 import "proto/llm_prompt.proto";
 import "proto/lro.proto";
 import "proto/prompt.proto";
@@ -63,6 +64,9 @@ message PanelDescriptor {
     // prompt is the output. Pair with LroPanel when the consumer
     // wants the renderer to also drive execution.
     LlmPromptPanel llm_prompt = 7;
+    // Fetch a list, render a grid of clickable cards (e.g. an
+    // integrations/connections gallery, a plugin catalog, a deck).
+    GalleryPanel gallery = 8;
   }
 }
 

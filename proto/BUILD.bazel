@@ -52,6 +52,7 @@ proto_library(
     # without a `strip_import_prefix`.
     srcs = [
         "form.proto",
+        "gallery.proto",
         "llm_prompt.proto",
         "lro.proto",
         "panel.proto",
