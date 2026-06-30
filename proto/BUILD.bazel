@@ -1,6 +1,5 @@
 load("@aspect_rules_js//npm:defs.bzl", "npm_package")
 load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
-load("@npm//:@bufbuild/protoc-gen-es/package_json.bzl", protoc_gen_es_bin = "bin")
 load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_proto_grpc_java//:defs.bzl", "java_grpc_library", "java_proto_library")
@@ -9,10 +8,6 @@ load("@rules_swift//proto:proto.bzl", "swift_proto_library")
 load("//bazel:proto_es.bzl", "proto_es")
 
 package(default_visibility = ["//visibility:public"])
-
-# protobuf-es codegen plugin (a runnable js_binary over the npm package's bin).
-# Consumed by the `proto_es` rule below to emit TypeScript for the web surface.
-protoc_gen_es_bin.protoc_gen_es_binary(name = "protoc_gen_es")
 
 # TypeScript (protobuf-es) for meridian.ui.v1 — the PanelDescriptor contract,
 # the canonical web types that replace the hand-written, drift-prone

@@ -1,0 +1,12 @@
+# Dev-only home for the protobuf-es codegen plugin.
+#
+# The plugin loads `@npm` (created by meridian's dev_dependency npm extension),
+# which is NOT visible when meridian is consumed as a dependency. Consumers load
+# //proto:BUILD.bazel for the proto_library targets, so that file must never load
+# @npm — hence the plugin lives here, in a package only meridian-root references.
+
+load("@npm//:@bufbuild/protoc-gen-es/package_json.bzl", protoc_gen_es_bin = "bin")
+
+package(default_visibility = ["//visibility:public"])
+
+protoc_gen_es_bin.protoc_gen_es_binary(name = "protoc_gen_es")

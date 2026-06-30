@@ -94,7 +94,9 @@ proto_es = rule(
                   "protobuf-es emits load-bearing relative imports to them.",
         ),
         "plugin": attr.label(
-            default = "//proto:protoc_gen_es",
+            # In //proto/es (a dev-only package) so //proto/BUILD.bazel — which
+            # consumers load for the proto_library — never loads @npm.
+            default = "//proto/es:protoc_gen_es",
             executable = True,
             cfg = "exec",
             doc = "The protoc-gen-es plugin (a js_binary).",
