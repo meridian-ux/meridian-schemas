@@ -1,10 +1,73 @@
+load("@aspect_rules_js//npm:defs.bzl", "npm_package")
+load("@aspect_rules_ts//ts:defs.bzl", "ts_project")
+load("@npm//:@bufbuild/protoc-gen-es/package_json.bzl", protoc_gen_es_bin = "bin")
 load("@rules_java//java:java_library.bzl", "java_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_proto_grpc_java//:defs.bzl", "java_grpc_library", "java_proto_library")
 load("@rules_rust_prost//:defs.bzl", "rust_prost_transform")
 load("@rules_swift//proto:proto.bzl", "swift_proto_library")
+load("//bazel:proto_es.bzl", "proto_es")
 
 package(default_visibility = ["//visibility:public"])
+
+# protobuf-es codegen plugin (a runnable js_binary over the npm package's bin).
+# Consumed by the `proto_es` rule below to emit TypeScript for the web surface.
+protoc_gen_es_bin.protoc_gen_es_binary(name = "protoc_gen_es")
+
+# TypeScript (protobuf-es) for meridian.ui.v1 — the PanelDescriptor contract,
+# the canonical web types that replace the hand-written, drift-prone
+# src/uiview/types.ts. One <name>_pb.ts per source (panel_pb.ts, table_pb.ts, …).
+proto_es(
+    name = "uiview_es",
+    # field_behavior is imported by every uiview file (as a field annotation)
+    # and protobuf-es emits a load-bearing import to it, so generate it too.
+    also_generate = ["google/api/field_behavior.proto"],
+    proto = ":uiview_proto",
+)
+
+# TypeScript (protobuf-es) for meridian.theme.v1 — the Theme contract, the
+# canonical web types behind theme/web/theme.ts's hand interface.
+proto_es(
+    name = "theme_es",
+    proto = ":theme_proto",
+)
+
+# Compile the generated protobuf-es TypeScript into .js + .d.ts — the
+# @meridian/proto-ts surface (PanelDescriptor, Theme, …) the web renderers and
+# aion consume. root_dir/out_dir = "es" so the emitted tree mirrors the imports
+# (proto/*_pb.js, google/api/field_behavior_pb.js).
+ts_project(
+    name = "proto_ts",
+    srcs = [
+        ":theme_es",
+        ":uiview_es",
+    ],
+    declaration = True,
+    out_dir = "lib",
+    root_dir = "es",
+    transpiler = "tsc",
+    tsconfig = "tsconfig.es.json",
+    deps = ["//:node_modules/@bufbuild/protobuf"],
+)
+
+# Assemble the compiled types as the @meridian/proto-ts npm package: package.json
+# at the root, then proto/*_pb.{js,d.ts} + google/api/*_pb.{js,d.ts}. Linked into
+# the workspace node_modules (see //:BUILD.bazel) so first-party code can
+# `import … from "@meridian/proto-ts/proto/panel_pb.js"`.
+npm_package(
+    name = "proto_ts_pkg",
+    srcs = [
+        "proto-ts.package.json",
+        ":proto_ts",
+    ],
+    package = "@meridian/proto-ts",
+    replace_prefixes = {"proto-ts.package.json": "package.json"},
+    root_paths = [
+        "proto/lib",
+        "proto",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 # The raw schema sources. Exported so skin modules (e.g. @brand) can run
 # `protoc --encode=meridian.theme.v1.Theme theme.proto` over a Theme textproto

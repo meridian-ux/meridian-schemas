@@ -1,0 +1,23 @@
+{
+  "name": "@meridian/proto-ts",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Canonical protobuf-es TypeScript types for meridian.ui.v1 (PanelDescriptor) + meridian.theme.v1 (Theme). Generated from proto/ — the single source the web renderers and aion consume.",
+  "exports": {
+    ".": {
+      "types": "./proto/panel_pb.d.ts",
+      "default": "./proto/panel_pb.js"
+    },
+    "./proto/*.js": {
+      "types": "./proto/*.d.ts",
+      "default": "./proto/*.js"
+    },
+    "./google/api/*.js": {
+      "types": "./google/api/*.d.ts",
+      "default": "./google/api/*.js"
+    }
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.12.1"
+  }
+}

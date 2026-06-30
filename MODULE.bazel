@@ -50,6 +50,14 @@ use_repo(apple_cc, "local_config_apple_cc_toolchains")
 
 register_toolchains("@local_config_apple_cc_toolchains//:all")
 
+# Prebuilt protoc for the protobuf-es codegen (//bazel:proto_es.bzl), so codegen
+# never compiles protoc from source — the apple_support CC toolchain (registered
+# below for Swift) can't build it on a Command-Line-Tools-only host. Exposes
+# @meridian_protoc//:protoc; ONLY proto_es uses it, so the Java/Rust/Swift proto
+# toolchains are untouched.
+protoc_prebuilt = use_extension("//bazel:protoc_prebuilt.bzl", "protoc_prebuilt")
+use_repo(protoc_prebuilt, "meridian_protoc")
+
 # rules_vite is dev-only: it's used to wire vitest_test targets in
 # tests/BUILD.bazel. Consumers of meridian don't need it.
 bazel_dep(name = "rules_vite", version = "0.1.0", dev_dependency = True)

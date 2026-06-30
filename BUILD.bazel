@@ -1,8 +1,35 @@
+load("@aspect_rules_js//npm:defs.bzl", "npm_link_package", "npm_package")
 load("@npm//:defs.bzl", "npm_link_all_packages")
 
 package(default_visibility = ["//visibility:public"])
 
 npm_link_all_packages(name = "node_modules")
+
+# First-party: link the generated @meridian/proto-ts package into the workspace
+# node_modules so first-party code resolves `@meridian/proto-ts/...` the same way
+# it resolves third-party packages.
+npm_link_package(
+    name = "node_modules/@meridian/proto-ts",
+    src = "//proto:proto_ts_pkg",
+)
+
+# Assemble @meridian/core (this package: package.json + the compiled src/ surface)
+# and link it first-party, so the React renderer (//web-react) resolves
+# `@meridian/core/uiview` (the WebRenderer seam) like any other package.
+npm_package(
+    name = "core_pkg",
+    srcs = [
+        "package.json",
+        "//src:core",
+    ],
+    package = "@meridian/core",
+    visibility = ["//visibility:public"],
+)
+
+npm_link_package(
+    name = "node_modules/@meridian/core",
+    src = ":core_pkg",
+)
 
 exports_files([
     "package.json",
