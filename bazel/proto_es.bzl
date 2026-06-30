@@ -13,6 +13,10 @@ Only the direct sources are generated; imported descriptors (field_behavior,
 the WKTs) are present in the descriptor set for parsing but not re-emitted.
 """
 
+# ProtoInfo is no longer a Starlark global in recent Bazel; load it explicitly
+# (rules_proto re-exports it) so this file compiles for consumers on strict Bazel.
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
+
 _PROTO_SUFFIX = ".proto"
 
 def _proto_es_impl(ctx):
