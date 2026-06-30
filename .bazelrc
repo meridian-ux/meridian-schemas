@@ -2,7 +2,9 @@ common --enable_bzlmod
 common --incompatible_enable_proto_toolchain_resolution
 common --@protobuf//bazel/toolchains:prefer_prebuilt_protoc
 
-common --registry=https://raw.githubusercontent.com/fastverk/bazel-registry/main/
+# meridian-schemas depends only on BCR modules (rules_js/ts/nodejs/skylib +
+# rules_proto/protobuf/googleapis), so BCR alone resolves everything — no custom
+# registry needed. This keeps CI self-contained.
 common --registry=https://bcr.bazel.build
 
 build --java_runtime_version=remotejdk_17

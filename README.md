@@ -10,11 +10,11 @@ It ships three things:
   to host) and `meridian.theme.v1.Theme` (style). Semantics and style are
   orthogonal proto layers, so a renderer or a skin can depend on one without the
   other. See [`proto/`](proto/).
-- **`@meridian/proto-ts`** — the canonical TypeScript surface, generated from the
+- **`@savvifi/meridian-proto-ts`** — the canonical TypeScript surface, generated from the
   protos via [protobuf-es](https://github.com/bufbuild/protobuf-es)
   (`//bazel:proto_es.bzl`). The single source the web renderers and the aion
   emitter consume.
-- **`@meridian/schemas` (the WebRenderer seam)** — the framework-neutral
+- **`@savvifi/meridian-schemas` (the WebRenderer seam)** — the framework-neutral
   `mount(container, descriptor, theme, invoker) → { update, unmount }` interface
   plus the host transport/runtime contracts (`RpcInvoker`, `RenderContext`). Every
   *web* renderer implements it: `meridian-web` (web-components, reference),
@@ -45,7 +45,7 @@ The module stays brand- and framework-neutral; brand (a `Theme`) and framework
 ## Build
 
 ```bash
-bazel build //...        # proto contracts, @meridian/proto-ts, the seam
+bazel build //...        # proto contracts, @savvifi/meridian-proto-ts, the seam
 ```
 
 Codegen uses a prebuilt `protoc` (`//bazel:protoc_prebuilt.bzl`) so it never

@@ -6,9 +6,9 @@ module(
 
 # meridian-schemas is the framework- and brand-neutral root of the meridian
 # design language: the proto contracts (meridian.ui.v1.PanelDescriptor +
-# meridian.theme.v1.Theme), their canonical TypeScript surface (@meridian/proto-ts,
+# meridian.theme.v1.Theme), their canonical TypeScript surface (@savvifi/meridian-proto-ts,
 # protobuf-es codegen) and the framework-neutral WebRenderer seam
-# (@meridian/schemas). Every renderer (meridian-web, meridian-web-react,
+# (@savvifi/meridian-schemas). Every renderer (meridian-web, meridian-web-react,
 # meridian-tui, …) and every emitter (aion) depends on this module; it depends on
 # none of them. No Java/Rust/Swift here — those bindings live with each renderer.
 

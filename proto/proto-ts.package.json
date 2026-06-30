@@ -1,8 +1,15 @@
 {
-  "name": "@meridian/proto-ts",
+  "name": "@savvifi/meridian-proto-ts",
   "version": "0.1.0",
   "type": "module",
   "description": "Canonical protobuf-es TypeScript types for meridian.ui.v1 (PanelDescriptor) + meridian.theme.v1 (Theme). Generated from proto/ — the single source the web renderers and aion consume.",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meridian-ux/meridian-schemas.git"
+  },
   "exports": {
     ".": {
       "types": "./proto/panel_pb.d.ts",

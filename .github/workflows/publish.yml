@@ -1,0 +1,64 @@
+name: publish
+
+# OIDC trusted publishing to npmjs — no long-lived tokens, automatic provenance.
+#
+# Builds the npm packages with Bazel (the same //proto:proto_ts_pkg + //:schemas_pkg
+# targets that build locally), then `npm publish` exchanges the GitHub Actions OIDC
+# token for a short-lived npm credential. This requires a TRUSTED PUBLISHER to be
+# configured on each package at npmjs.com (Settings → Trusted Publisher):
+#   Provider:   GitHub Actions
+#   Owner:      meridian-ux
+#   Repository: meridian-schemas
+#   Workflow:   publish.yml
+#   Allowed:    npm publish
+# (npm has no "pending publisher" flow, so a package must exist before its trusted
+# publisher can be attached — the very first version is seeded once, then every
+# subsequent publish flows through here tokenlessly.)
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC trusted publishing
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      # OIDC trusted publishing needs npm >= 11.5.1; Node 22 ships an older npm.
+      # bazelisk reads .bazelversion to fetch the pinned Bazel.
+      - name: Upgrade npm + install bazelisk
+        run: |
+          npm install -g npm@latest @bazel/bazelisk
+          npm --version
+          bazelisk version
+
+      - name: Build the npm packages
+        run: bazelisk build //proto:proto_ts_pkg //:schemas_pkg
+
+      # bazel-bin is a read-only symlink tree, so copy each package to a writable
+      # dir before publishing. proto-ts first (schemas depends on it). `npm publish`
+      # auto-detects OIDC (id-token: write + a configured trusted publisher) and
+      # attaches a provenance attestation.
+      - name: Publish @savvifi/meridian-proto-ts
+        run: |
+          rm -rf "$RUNNER_TEMP/proto-ts"
+          cp -RL bazel-bin/proto/proto_ts_pkg "$RUNNER_TEMP/proto-ts"
+          cd "$RUNNER_TEMP/proto-ts" && npm publish
+
+      - name: Publish @savvifi/meridian-schemas
+        run: |
+          rm -rf "$RUNNER_TEMP/schemas"
+          cp -RL bazel-bin/schemas_pkg "$RUNNER_TEMP/schemas"
+          cd "$RUNNER_TEMP/schemas" && npm publish

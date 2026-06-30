@@ -5,30 +5,34 @@ package(default_visibility = ["//visibility:public"])
 
 npm_link_all_packages(name = "node_modules")
 
-# First-party: link the generated @meridian/proto-ts package into the workspace
-# node_modules so the seam (and, in consumer repos, the renderers) resolve
-# `@meridian/proto-ts/...` the same way they resolve third-party packages.
+# First-party: link the generated @savvifi/meridian-proto-ts package into the
+# workspace node_modules so the seam (and, in consumer repos, the renderers)
+# resolve `@savvifi/meridian-proto-ts/...` the same way they resolve third-party
+# packages.
 npm_link_package(
-    name = "node_modules/@meridian/proto-ts",
+    name = "node_modules/@savvifi/meridian-proto-ts",
     src = "//proto:proto_ts_pkg",
 )
 
-# Assemble @meridian/schemas (this package's package.json + the compiled seam
-# under src/uiview/) and link it first-party. Defined here, in the root package,
-# so npm_package's default root_paths preserve the src/uiview/ layout the
-# "./uiview" export points at.
+# Assemble @savvifi/meridian-schemas: its own published manifest
+# (schemas.package.json, kept separate from the private workspace package.json so
+# its npm dep on @savvifi/meridian-proto-ts doesn't enter the Bazel/pnpm graph) +
+# the compiled seam under src/uiview/. Defined here, in the root package, so
+# npm_package's default root_paths preserve the src/uiview/ layout the "./uiview"
+# export points at.
 npm_package(
     name = "schemas_pkg",
     srcs = [
-        "package.json",
+        "schemas.package.json",
         "//src/uiview:seam",
     ],
-    package = "@meridian/schemas",
+    package = "@savvifi/meridian-schemas",
+    replace_prefixes = {"schemas.package.json": "package.json"},
     visibility = ["//visibility:public"],
 )
 
 npm_link_package(
-    name = "node_modules/@meridian/schemas",
+    name = "node_modules/@savvifi/meridian-schemas",
     src = ":schemas_pkg",
 )
 

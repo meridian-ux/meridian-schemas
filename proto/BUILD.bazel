@@ -22,7 +22,7 @@ proto_es(
 )
 
 # Compile the generated protobuf-es TypeScript into .js + .d.ts — the
-# @meridian/proto-ts surface (PanelDescriptor, Theme, …) the renderers and aion
+# @savvifi/meridian-proto-ts surface (PanelDescriptor, Theme, …) the renderers and aion
 # consume. root_dir = "es" (the proto_es out tree) ≠ out_dir = "lib" so the emit
 # mirrors the imports (proto/*_pb.js, google/api/field_behavior_pb.js).
 ts_project(
@@ -39,17 +39,17 @@ ts_project(
     deps = ["//:node_modules/@bufbuild/protobuf"],
 )
 
-# Assemble the compiled types as the @meridian/proto-ts npm package: package.json
+# Assemble the compiled types as the @savvifi/meridian-proto-ts npm package: package.json
 # at the root, then proto/*_pb.{js,d.ts} + google/api/*_pb.{js,d.ts}. Linked into
 # the workspace node_modules (see //:BUILD.bazel) so first-party code can
-# `import … from "@meridian/proto-ts/proto/panel_pb.js"`.
+# `import … from "@savvifi/meridian-proto-ts/proto/panel_pb.js"`.
 npm_package(
     name = "proto_ts_pkg",
     srcs = [
         "proto-ts.package.json",
         ":proto_ts",
     ],
-    package = "@meridian/proto-ts",
+    package = "@savvifi/meridian-proto-ts",
     replace_prefixes = {"proto-ts.package.json": "package.json"},
     root_paths = [
         "proto/lib",

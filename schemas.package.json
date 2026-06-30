@@ -1,0 +1,30 @@
+{
+  "name": "@savvifi/meridian-schemas",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The framework- and brand-neutral root of the meridian design language: the WebRenderer seam (mount/update/unmount + transport contracts) over the canonical meridian.ui.v1 PanelDescriptor + meridian.theme.v1 Theme. Renderers implement the seam; emitters (aion) produce descriptors.",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meridian-ux/meridian-schemas.git"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/uiview/index.d.ts",
+      "import": "./src/uiview/index.js"
+    },
+    "./uiview": {
+      "types": "./src/uiview/index.d.ts",
+      "import": "./src/uiview/index.js"
+    }
+  },
+  "files": [
+    "src/uiview/**/*.js",
+    "src/uiview/**/*.d.ts"
+  ],
+  "dependencies": {
+    "@savvifi/meridian-proto-ts": "^0.1.0"
+  }
+}

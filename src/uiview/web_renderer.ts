@@ -15,12 +15,12 @@
 // rather than a single renderer.
 //
 // The seam speaks the *canonical* generated types: `PanelDescriptor`
-// (meridian.ui.v1) and `Theme` (meridian.theme.v1) from @meridian/proto-ts.
+// (meridian.ui.v1) and `Theme` (meridian.theme.v1) from @savvifi/meridian-proto-ts.
 // Transport (`RpcInvoker`) and runtime `RenderContext` are host-facing
 // interfaces, not proto messages, so they stay in ./types.ts.
 
-import type { PanelDescriptor } from "@meridian/proto-ts/proto/panel_pb.js";
-import type { Theme } from "@meridian/proto-ts/proto/theme_pb.js";
+import type { PanelDescriptor } from "@savvifi/meridian-proto-ts/proto/panel_pb.js";
+import type { Theme } from "@savvifi/meridian-proto-ts/proto/theme_pb.js";
 import type { RenderContext, RpcInvoker } from "./transport.js";
 
 /** A handle to one mounted panel, returned by {@link WebRenderer.mount}. */
