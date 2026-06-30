@@ -21,7 +21,7 @@
 
 import type { PanelDescriptor } from "@meridian/proto-ts/proto/panel_pb.js";
 import type { Theme } from "@meridian/proto-ts/proto/theme_pb.js";
-import type { RenderContext, RpcInvoker } from "./types.js";
+import type { RenderContext, RpcInvoker } from "./transport.js";
 
 /** A handle to one mounted panel, returned by {@link WebRenderer.mount}. */
 export interface PanelHandle {
