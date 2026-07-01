@@ -12,10 +12,12 @@ syntax = "proto3";
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/form.proto";
 import "proto/gallery.proto";
 import "proto/llm_prompt.proto";
 import "proto/lro.proto";
 import "proto/prompt.proto";
+import "proto/rpc.proto";
 import "proto/table.proto";
 
 option java_multiple_files = true;
@@ -67,7 +69,43 @@ message PanelDescriptor {
     // Fetch a list, render a grid of clickable cards (e.g. an
     // integrations/connections gallery, a plugin catalog, a deck).
     GalleryPanel gallery = 8;
+    // A form of fields — an entity "detail section". READONLY renders
+    // a read-only card; EDIT renders an editable form. Distinct from
+    // PromptPanel (which collects standalone input with no server
+    // round-trip): FormPanel is the CRUD/detail surface bound to a
+    // record, with a `submit` RPC in EDIT mode.
+    FormPanel form = 9;
   }
+}
+
+// A form of fields bound to a record — the entity "detail section" /
+// CRUD surface. In READONLY mode the renderer shows the fields as a
+// read-only card (values come from the slot/panel's fetch); in EDIT
+// mode it renders an editable form whose submit fires `submit`.
+//
+// Reuses the shared FormField input primitives (form.proto). The
+// difference from PromptPanel is intent + binding: PromptPanel is a
+// standalone input collector (no RPC side effect); FormPanel is a
+// record-bound detail/edit view with a save RPC.
+message FormPanel {
+  // Fields to render, in display order.
+  repeated FormField fields = 1 [(google.api.field_behavior) = REQUIRED];
+  // READONLY (detail card) or EDIT (editable form).
+  FormMode mode = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Save RPC fired on submit. Meaningful in EDIT mode; READONLY
+  // panels are populated via the slot/panel fetch and set no submit.
+  RpcCall submit = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Singular noun for labels / empty states (e.g. "product").
+  string item_noun = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Render mode for a FormPanel.
+enum FormMode {
+  FORM_MODE_UNSPECIFIED = 0;
+  // Read-only detail card.
+  FORM_MODE_READONLY = 1;
+  // Editable form with a submit action.
+  FORM_MODE_EDIT = 2;
 }
 
 // A reload-friendly bundle of `PanelDescriptor`s authored as a single

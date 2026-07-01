@@ -90,6 +90,7 @@ proto_library(
         "prompt.proto",
         "rpc.proto",
         "table.proto",
+        "view.proto",
     ],
     deps = [
         "@googleapis//google/api:field_behavior_proto",
