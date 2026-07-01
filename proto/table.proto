@@ -33,6 +33,45 @@ message TablePanel {
   // Actions exposed on the selected row (typically rendered as
   // buttons above the table).
   repeated RowAction actions = 6 [(google.api.field_behavior) = OPTIONAL];
+  // How the table pages. Absent ⇒ CLIENT (paginate the fetched rows in
+  // the renderer) — backward compatible with pre-0.3.0 descriptors.
+  Pagination pagination = 7 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// How a TablePanel paginates. CLIENT paginates the rows `populate` already
+// returned (renderer-local, good for small lists). OFFSET and CURSOR re-invoke
+// `populate` per page with renderer-supplied request fields, so they scale to
+// large collections. Every renderer switches on `mode`; a renderer that can't
+// page (e.g. a fixed-height TUI) may treat all modes as CLIENT.
+message Pagination {
+  // Paging strategy. Absent / UNSPECIFIED ⇒ CLIENT.
+  PaginationMode mode = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Default rows per page. 0 ⇒ the renderer's own default.
+  uint32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // OFFSET mode: request fields the renderer sets on `populate` when paging,
+  // plus the response path to the total row count (for page count / "N of M").
+  // Paths are dotted, like TableColumn.field_path (e.g. "page.offset").
+  string offset_request_field = 3 [(google.api.field_behavior) = OPTIONAL];
+  string limit_request_field = 4 [(google.api.field_behavior) = OPTIONAL];
+  string total_field = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // CURSOR mode (infinite scroll): request field carrying the cursor, plus the
+  // response path to the next cursor (empty in a response ⇒ end of data).
+  string cursor_request_field = 6 [(google.api.field_behavior) = OPTIONAL];
+  string next_cursor_field = 7 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Paging strategy for a Pagination.
+enum PaginationMode {
+  // Default; treated as CLIENT.
+  PAGINATION_MODE_UNSPECIFIED = 0;
+  // Paginate the rows already fetched by `populate`, in the renderer.
+  PAGINATION_MODE_CLIENT = 1;
+  // Server paging via offset/limit request fields + a total-count response.
+  PAGINATION_MODE_OFFSET = 2;
+  // Cursor / infinite scroll via a cursor request field + next-cursor response.
+  PAGINATION_MODE_CURSOR = 3;
 }
 
 // One column in a TablePanel. Display order matches definition order.
