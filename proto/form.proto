@@ -76,12 +76,38 @@ message TextInput {
   int32 max_length = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Single choice from a fixed list.
+// Single choice from a list. The options are either a static `allowed_values`
+// list or, for lists only known at render time, populated from an RPC via
+// `options_source` (exactly one of the two).
 message EnumSelection {
-  // Permitted values in display order.
-  repeated string allowed_values = 1 [(google.api.field_behavior) = REQUIRED];
-  // Pre-selected value. Must appear in `allowed_values` if set.
+  // Permitted values in display order. Set this OR `options_source`.
+  repeated string allowed_values = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Pre-selected value. Must appear among the resolved options if set.
   string default_value = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Populate the options from an RPC instead of a static list. When set, the
+  // renderer calls the RPC once (like TablePanel.populate), reads the repeated
+  // `options_field` from the response, and renders one option per element. Set
+  // this OR `allowed_values`.
+  OptionsSource options_source = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Describes an RPC whose response yields a dropdown's options. Mirrors
+// TablePanel's populate/rows_field/field_path convention, but self-contained
+// (service + method inline) since option lists rarely need request bindings.
+message OptionsSource {
+  // Fully-qualified service, e.g. "workspaces.v1.WorkspacesService".
+  string service = 1 [(google.api.field_behavior) = REQUIRED];
+  // Method that returns the option list, e.g. "ListConfigs".
+  string method = 2 [(google.api.field_behavior) = REQUIRED];
+  // Path to the repeated field in the response holding the options
+  // (ProtoPaths chain, e.g. "configs" or "outer.items").
+  string options_field = 3 [(google.api.field_behavior) = REQUIRED];
+  // Path within each option element for the value submitted on select
+  // (e.g. "name").
+  string value_field = 4 [(google.api.field_behavior) = REQUIRED];
+  // Path within each option element for the display label. Defaults to
+  // `value_field` when empty.
+  string label_field = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Single-line text input with echo suppressed (typed characters
