@@ -1,0 +1,65 @@
+// Affordance — meridian's invocable-affordance content primitive: a labeled
+// thing you can act on that resolves to a deep-link URI *or* a command, with no
+// gRPC round-trip. Distinct from `meridian.ui.v1.Action` (view.proto), which is
+// a labeled RpcCall with a placement (the host's row/header op-actions): an
+// Affordance carries no RpcCall — it is a static, brand-neutral "launch this /
+// run this" the renderer draws directly (web = link/button, tui = keybinding,
+// chat = link). It is reused nested (ConnectTarget, CatalogItem) and exposed as
+// a panel via `ActionPanel`.
+//
+// Depends on nothing but the field_behavior annotation.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "AffordanceProto";
+
+// An invocable affordance. Exactly one of `invoke` is meaningful: `uri` is a
+// deep-link the renderer opens (an https URL, or a custom scheme like
+// `cursor://`, `vscode:`); `command` is a shell/CLI line the renderer runs (or,
+// on surfaces that can't execute, offers to copy). Carries no RpcCall — see the
+// file header for the distinction from `Action`.
+message Affordance {
+  // Stable identifier (e.g. "install", "install-insiders").
+  string id = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Display label ("Add to Cursor", "Install in VS Code").
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional one-liner shown near the affordance.
+  string description = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional icon key the host maps to a vector glyph (e.g. "download").
+  string icon = 4 [(google.api.field_behavior) = OPTIONAL];
+  // What invoking the affordance does.
+  oneof invoke {
+    // A URI the renderer navigates to / opens (https URL or custom scheme).
+    string uri = 5;
+    // A command line the renderer runs, or offers to copy where it can't run.
+    string command = 6;
+  }
+  // Prominence hint. The renderer maps it to its own weighting (web = contained
+  // vs outlined button, tui = highlighted vs plain keybinding).
+  AffordanceStyle style = 7 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// How prominently an affordance renders.
+enum AffordanceStyle {
+  AFFORDANCE_STYLE_UNSPECIFIED = 0;
+  // The primary call to action.
+  AFFORDANCE_STYLE_PRIMARY = 1;
+  // A secondary / alternate affordance.
+  AFFORDANCE_STYLE_SECONDARY = 2;
+}
+
+// PanelDescriptor body variant: a panel that is a single Affordance (plus
+// optional lead copy). The star primitive `Affordance` is reused nested by
+// `ConnectTarget` and `CatalogItem`; this wrapper exposes it as a standalone
+// panel shape, matching the `*Panel` convention of the other body variants.
+message ActionPanel {
+  // The affordance to render.
+  Affordance action = 1 [(google.api.field_behavior) = REQUIRED];
+  // Optional description shown above the affordance.
+  string description = 2 [(google.api.field_behavior) = OPTIONAL];
+}

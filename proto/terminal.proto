@@ -1,0 +1,43 @@
+// TerminalPanel — an interactive terminal spliced to a remote pty over a
+// WebSocket. Unlike the other panel shapes it is WEB-SPECIFIC: only the
+// meridian-web (web-components) renderer realizes it, over xterm.js; the TUI /
+// web-react / mui kits do NOT render it (a terminal-in-a-terminal / terminal-in-
+// a-form-kit is meaningless). It is authored here so the descriptor is canonical
+// and a panel bundle can carry it, but it stays a meridian-web specialization.
+//
+// The wire protocol (browser ↔ pty broker) is the renderer's contract, not the
+// descriptor's: binary frames = raw pty bytes both ways; text frames = JSON
+// control ({"type":"resize",cols,rows} up; {"type":"exit",code} down). The
+// descriptor carries only WHERE to connect and pre-fit dimensions — no
+// credential (the same-site cookie rides the WebSocket handshake, gated
+// upstream by the ws-proxy).
+//
+// This message mirrors EXACTLY the shape meridian-web declared locally while it
+// awaited this proto (its renderer's `TerminalPanelShape`: url / tool? / cols? /
+// rows?); canonicalized at schemas 0.5.0 so the renderer drops its local cast.
+//
+// No internal dependencies.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "TerminalProto";
+
+// PanelDescriptor body variant: an xterm.js terminal over a pty WebSocket.
+message TerminalPanel {
+  // ws:// or wss:// URL of the pty broker. May contain `{field}` placeholders
+  // the renderer fills from the render context (selected row first, then the
+  // trailing segment of the current resource path for `{name}`).
+  string url = 1 [(google.api.field_behavior) = REQUIRED];
+  // Tool id shown in the status header + telemetry (e.g. "bash", "opencode").
+  string tool = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Pre-fit column count; 0 = the xterm default, then FitAddon fits to the
+  // container.
+  uint32 cols = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Pre-fit row count; 0 = the xterm default.
+  uint32 rows = 4 [(google.api.field_behavior) = OPTIONAL];
+}

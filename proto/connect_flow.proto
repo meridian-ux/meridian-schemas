@@ -1,0 +1,71 @@
+// ConnectFlowPanel — meridian's composed "how any caller connects to a surface"
+// primitive, and the star of this content family. It is a Choice of connection
+// targets; selecting a target reveals that target's one-click Affordance(s)
+// (optional) and its config Snippet(s). This is the generic shape behind a
+// "connect your agent / client / app to <surface>" page — reusable by any host,
+// not just the aion MCP gateway that motivated it.
+//
+// Composition (all brand-neutral, all defined here or imported):
+//   ConnectFlowPanel
+//     ├─ prompt / placeholder            (copy)
+//     ├─ endpoint : CopyValue            (the shared endpoint chip, optional)
+//     └─ targets : repeated ConnectTarget
+//          ├─ label / name / description / icon   (the Choice option + heading)
+//          ├─ actions : repeated Affordance       (one-click connect, optional)
+//          └─ configs : repeated Snippet          (copy-paste config, optional)
+//
+// A renderer draws the targets as a Choice (web = segmented tabs, tui =
+// arrow-key list, chat = numbered), and the selected target's actions +
+// configs below it. Everything themes through the skin tokens; no brand here.
+//
+// Depends on affordance.proto (Affordance), snippet.proto (Snippet), and
+// copy_value.proto (CopyValue).
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/affordance.proto";
+import "proto/copy_value.proto";
+import "proto/snippet.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "ConnectFlowProto";
+
+// PanelDescriptor body variant: a target-picker connect flow.
+message ConnectFlowPanel {
+  // Optional intro copy shown above the target picker.
+  string prompt = 1 [(google.api.field_behavior) = OPTIONAL];
+  // The connection targets to choose among, in display order.
+  repeated ConnectTarget targets = 2 [(google.api.field_behavior) = REQUIRED];
+  // Id of the target selected by default (else the first target).
+  string default_target_id = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional placeholder shown when `targets` is empty.
+  string placeholder = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Optional shared endpoint, rendered once (e.g. the endpoint "chip" every
+  // target points at). Copyable via the CopyValue affordance.
+  CopyValue endpoint = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One connection target: a Choice option that yields connect affordances +
+// config snippets.
+message ConnectTarget {
+  // Stable identifier (e.g. "cursor", "vscode").
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Short label for the Choice/tab (e.g. "Cursor").
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional longer heading shown when the target is selected
+  // (e.g. "VS Code · Copilot").
+  string name = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional description / setup note.
+  string description = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Optional icon key the host maps to a vector glyph.
+  string icon = 5 [(google.api.field_behavior) = OPTIONAL];
+  // One-click connect affordances (e.g. an "Add to Cursor" deep-link, plus an
+  // alternate). Optional — targets without a one-click path expose only the
+  // config snippet(s).
+  repeated Affordance actions = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Config snippets to copy (e.g. the mcp.json / config.toml block). Optional.
+  repeated Snippet configs = 7 [(google.api.field_behavior) = OPTIONAL];
+}

@@ -1,0 +1,97 @@
+// GrammarPanel — one panel over DECLARATIVE RENDERING GRAMMARS (markdown,
+// mermaid, plantuml, graphviz, vega / vega-lite). The insight: a declarative
+// grammar describes INTENT (prose, a diagram, a chart) as a `(language, source)`
+// pair, not pixels — so each surface can transcode it to whatever OUTPUT FORMAT
+// it can display, at whatever fidelity it supports. One panel, many grammars,
+// many modalities.
+//
+// CONTENT NEGOTIATION FOR GRAMMARS. Think of it as HTTP content negotiation:
+//   • the grammar (language, source)          = the resource;
+//   • a surface's set of wired renderers       = its Accept set (what it can display);
+//   • each renderer (mermaid→svg, vega→canvas, md→html/ANSI) = a transcoder;
+//   • `alt` / `source`-as-text                 = the guaranteed 406-fallback (text
+//     is displayable everywhere).
+// A renderer negotiates the best transcoder its surface can display; if none
+// matches, it DEGRADES down a ladder rather than blanking. "The TUI can't render
+// vega/mermaid/graphviz" is NOT special-cased — it's just the TUI's Accept set
+// lacking svg/raster, so it degrades automatically. Adding a grammar = one enum
+// value + a host renderer; no schema or kit churn.
+//
+// THE DEGRADATION LADDER (applied by a renderer when no wired transcoder matches):
+//   1. MARKDOWN → a native lightweight render (text is universally displayable:
+//      web = minimal md→html; tui = ANSI headings/bold/code/lists).
+//   2. else `alt` (an author-provided one-line text summary) if set.
+//   3. else `source` in a titled/labeled code block (always displayable — text).
+// Never blank, never crash.
+//
+// PER-LANGUAGE × PER-MODALITY (rich path = a wired host renderer; else the ladder):
+//   markdown  — web: md→html · tui: ANSI text (native)      · chat: fenced ```markdown
+//   mermaid   — web: mermaid→svg (host) · tui: ladder        · chat: fenced ```mermaid
+//   plantuml  — web: PlantUML server/img (host) · tui: ladder · chat: image/link (host)
+//   graphviz  — web: viz.js→svg (host) · tui: ladder          · chat: image/link (host)
+//   vega/-lite— web: vega-embed (host) · tui: sparkline-or-ladder · chat: image/link (host)
+//
+// GrammarPanel is a SPECIALIZED visual panel (like TerminalPanel): it does not
+// meet the six content-shapes' strict cross-modality field-parity bar — the rich
+// render is web; other modalities degrade per the ladder. Kits stay
+// grammar-library-free: the host wires the transcoders (the icon-seam pattern).
+//
+// Depends on google/protobuf/struct.proto for the optional inline `data`.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/struct.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "GrammarProto";
+
+// PanelDescriptor body variant: a declarative grammar rendered per the surface's
+// capabilities.
+message GrammarPanel {
+  // Optional heading shown above the rendered grammar.
+  string title = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Optional caption shown below it.
+  string caption = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Which grammar `source` is written in. Drives which transcoder the host
+  // renderer selects and how the ladder degrades.
+  GrammarLanguage language = 3 [(google.api.field_behavior) = OPTIONAL];
+  // The declarative text/spec: markdown prose, a mermaid / plantuml / graphviz
+  // DSL, or a Vega(-Lite) spec as JSON text. One uniform field across languages.
+  string source = 4 [(google.api.field_behavior) = REQUIRED];
+  // Optional inline datasets / params merged into the render (chiefly Vega,
+  // whose spec may reference named data). A JSON object.
+  google.protobuf.Struct data = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional author-provided TEXT fallback (e.g. "Bar chart: requests/day"). The
+  // guaranteed-displayable degradation content when no transcoder matches the
+  // surface (ladder step 2). Prefer setting it for non-markdown grammars.
+  string alt = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Interactivity (Vega selections, mermaid clicks) is NOT carried as bespoke
+  // fields here. A grammar's named signals surface through the renderGrammar
+  // handle (getSignal / onSignal) and are consumed the meridian-idiomatic way:
+  // a `signal` FieldBinding source (rpc.proto) populates an RpcCall request from
+  // a live signal, fired through the RpcInvoker like every other panel action.
+  // Static/degraded surfaces simply have no live signals → a signal-bound call
+  // is inert. See GRAMMAR_PANEL.md.
+}
+
+// Declarative rendering grammars. Open/extensible: add a value here + a host
+// renderer for it; no kit change. Values default to UNSPECIFIED (0), which the
+// renderers treat as "unknown language" → the ladder (alt, else source).
+enum GrammarLanguage {
+  GRAMMAR_LANGUAGE_UNSPECIFIED = 0;
+  // CommonMark-ish markdown prose. Text — natively renderable on every surface.
+  GRAMMAR_LANGUAGE_MARKDOWN = 1;
+  // Mermaid diagram DSL (flowcharts, sequence, etc.) → svg.
+  GRAMMAR_LANGUAGE_MERMAID = 2;
+  // PlantUML DSL → svg/png (typically via a PlantUML server).
+  GRAMMAR_LANGUAGE_PLANTUML = 3;
+  // Graphviz DOT DSL → svg (e.g. viz.js).
+  GRAMMAR_LANGUAGE_GRAPHVIZ = 4;
+  // Vega-Lite spec (JSON) → a chart.
+  GRAMMAR_LANGUAGE_VEGA_LITE = 5;
+  // Full Vega spec (JSON) → a chart.
+  GRAMMAR_LANGUAGE_VEGA = 6;
+}

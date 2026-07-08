@@ -82,18 +82,29 @@ proto_library(
     # identical (single `meridian.ui.v1` package); intra-package imports use
     # `proto/<name>.proto` form to match Bazel's workspace-relative resolution.
     srcs = [
+        "affordance.proto",
+        "catalog.proto",
+        "choice.proto",
+        "connect_flow.proto",
+        "copy_value.proto",
         "form.proto",
         "gallery.proto",
+        "grammar.proto",
         "llm_prompt.proto",
         "lro.proto",
         "panel.proto",
         "prompt.proto",
         "rpc.proto",
+        "snippet.proto",
+        "stat.proto",
         "table.proto",
+        "terminal.proto",
         "view.proto",
     ],
     deps = [
         "@googleapis//google/api:field_behavior_proto",
+        # google.protobuf.Struct — GrammarPanel.data carries a JSON object.
+        "@protobuf//:struct_proto",
     ],
 )
 

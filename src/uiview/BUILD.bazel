@@ -12,6 +12,7 @@ ts_project(
     name = "seam",
     srcs = [
         "index.ts",
+        "stat.ts",
         "transport.ts",
         "web_renderer.ts",
     ],

@@ -7,18 +7,33 @@
 // them under one descriptor.
 //
 // Depends on table.proto, lro.proto, prompt.proto, llm_prompt.proto.
+//
+// A second family of body variants — the brand-neutral "content" shapes
+// (choice / snippet / action / connect_flow / copy_value / catalog) — describes
+// STATIC authored content (no RpcCall, no fetch), for landing / setup / "how to
+// connect" surfaces. They compose: ConnectFlowPanel is a Choice of targets, each
+// yielding an Affordance + a Snippet.
 syntax = "proto3";
 
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/affordance.proto";
+import "proto/catalog.proto";
+import "proto/choice.proto";
+import "proto/connect_flow.proto";
+import "proto/copy_value.proto";
 import "proto/form.proto";
 import "proto/gallery.proto";
+import "proto/grammar.proto";
 import "proto/llm_prompt.proto";
 import "proto/lro.proto";
 import "proto/prompt.proto";
 import "proto/rpc.proto";
+import "proto/snippet.proto";
+import "proto/stat.proto";
 import "proto/table.proto";
+import "proto/terminal.proto";
 
 option java_multiple_files = true;
 option java_package = "meridian.ui.v1";
@@ -75,6 +90,39 @@ message PanelDescriptor {
     // round-trip): FormPanel is the CRUD/detail surface bound to a
     // record, with a `submit` RPC in EDIT mode.
     FormPanel form = 9;
+    // ── Content shapes (static, brand-neutral; no RpcCall/fetch) ──
+    // Single-select among labeled options (web = segmented tabs, tui =
+    // arrow-key list, chat = numbered).
+    ChoicePanel choice = 10;
+    // A copyable code artifact (web = <pre> + copy, tui = box + OSC52,
+    // chat = fenced block).
+    SnippetPanel snippet = 11;
+    // An invocable affordance — a deep-link URI or a command (web =
+    // button/link, tui = keybinding, chat = link).
+    ActionPanel action = 12;
+    // Composed "how any caller connects to a surface": a Choice of
+    // targets, each yielding an Affordance + a Snippet.
+    ConnectFlowPanel connect_flow = 13;
+    // A labeled value with a copy affordance (web = pill/chip, tui =
+    // text + copy key, chat = inline code).
+    CopyValuePanel copy_value = 14;
+    // A grid/list of authored items (web = cards, tui = list, chat =
+    // bullets).
+    CatalogPanel catalog = 15;
+    // An interactive terminal over a pty WebSocket. WEB-SPECIFIC: only the
+    // meridian-web renderer realizes it (xterm.js); the tui / web-react /
+    // mui kits do not. Canonicalized here so a panel bundle can carry it.
+    TerminalPanel terminal = 16;
+    // A declarative rendering grammar (markdown / mermaid / plantuml / graphviz
+    // / vega). Rendered per the surface's capabilities (content negotiation),
+    // degrading to `alt` / source text where no transcoder matches. Rich render
+    // is web; other modalities degrade. See grammar.proto.
+    GrammarPanel grammar = 17;
+    // A KPI / metric tile — a labeled number with a COMPUTED delta/trend and an
+    // optional sparkline. A full-parity content shape (every modality). The
+    // delta/trend is computed from `previous`/`series`, never author-marked. See
+    // stat.proto.
+    StatPanel stat = 18;
   }
 }
 

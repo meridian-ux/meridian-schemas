@@ -1,0 +1,87 @@
+// StatPanel — a KPI / metric tile: a labeled number with a computed delta/trend
+// and an optional sparkline. A FULL-PARITY content shape (like the six brand-
+// neutral shapes, unlike the web-specific Terminal/Grammar panels): value +
+// number + text are displayable in EVERY modality, so every renderer realizes it
+// at full fidelity (web = a KPI card, tui = a stat line, chat = a line of text).
+//
+// THE DELTA/TREND IS COMPUTED, NOT AUTHORED. Renderers do NOT accept a hand-marked
+// direction (an author "↑"): they COMPUTE delta = value − previous (or, from
+// `series`, last − first) and trend = sign(delta). This catches the classic
+// dashboard bug of a declining metric mislabeled as "up". `delta_override` /
+// `trend_override` exist only as an escape hatch for cases the data can't express;
+// the DEFAULT is always computed. The delta/trend/format logic is implemented
+// ONCE per language (a shared helper) with matching semantics, so no renderer
+// diverges.
+//
+// HONEST SEMANTIC COLOR. A rising number is not universally "good" (churn, cost,
+// latency go the wrong way up). Renderers therefore color the delta good/bad ONLY
+// when `higher_is_better` is explicitly set (presence-tracked `optional bool`);
+// otherwise the trend is a NEUTRAL arrow + delta, no semantic color.
+//
+// Depends only on the field_behavior annotation.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "StatProto";
+
+// PanelDescriptor body variant: a KPI tile.
+message StatPanel {
+  // The metric name (e.g. "Active employees", "Churn").
+  string label = 1 [(google.api.field_behavior) = REQUIRED];
+  // The current numeric value.
+  double value = 2 [(google.api.field_behavior) = REQUIRED];
+  // How to render `value` and the computed delta.
+  ValueFormat format = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional unit shown after the value (e.g. "employees", "ms").
+  string unit = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Optional prior value. When present, delta = value − previous (the renderer
+  // computes it; presence-tracked so 0 is a real previous).
+  optional double previous = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional recent history (oldest → newest). Drives an optional sparkline and,
+  // when `previous` is absent, delta = last − first.
+  repeated double series = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Escape hatch: a pre-formatted delta string that overrides the computed one.
+  // Use only when the data can't express the delta; the default is computed.
+  optional string delta_override = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Escape hatch: overrides the COMPUTED trend. Default (TREND_UNSPECIFIED) =
+  // computed from the data. Set only for cases the data can't express.
+  Trend trend_override = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Whether a HIGHER value is "good". Presence-tracked: ONLY when set do
+  // renderers color the delta good/bad (semantic tokens). Absent ⇒ the trend is
+  // a neutral arrow + delta (honest — up ≠ good for churn/cost/latency).
+  optional bool higher_is_better = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Optional caption / secondary text under the tile.
+  string caption = 10 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// How to render a stat's value + delta. The rendering is deterministic and
+// identical across renderers (a shared per-language formatter), so the same
+// StatPanel reads the same everywhere.
+enum ValueFormat {
+  // Default: same as NUMBER (grouped integer, up to 2 dp).
+  VALUE_FORMAT_UNSPECIFIED = 0;
+  // Grouped number, e.g. "1,234.5".
+  VALUE_FORMAT_NUMBER = 1;
+  // The number followed by "%", e.g. "87.5%" (value is already a percent).
+  VALUE_FORMAT_PERCENT = 2;
+  // A "$"-prefixed grouped amount with 2 dp, e.g. "$1,234.00".
+  VALUE_FORMAT_CURRENCY = 3;
+  // Compact magnitude, e.g. "1.2K", "3.4M", "5B".
+  VALUE_FORMAT_COMPACT = 4;
+  // Raw number, no grouping, up to 2 dp, e.g. "1234.5".
+  VALUE_FORMAT_PLAIN = 5;
+}
+
+// The direction of a stat's change. Computed by default (sign of the delta);
+// carried here only as the `trend_override` escape hatch.
+enum Trend {
+  TREND_UNSPECIFIED = 0;
+  TREND_UP = 1;
+  TREND_DOWN = 2;
+  TREND_FLAT = 3;
+}

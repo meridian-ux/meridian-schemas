@@ -1,0 +1,58 @@
+// CatalogPanel — meridian's "grid/list of labeled items" content primitive:
+// each item has a name + description + optional tag / state badge + optional
+// icon and per-item Affordance. Brand-neutral and modality-agnostic: web =
+// cards, tui = a list, chat = bullets. The `style` field is a HINT.
+//
+// Distinct from `GalleryPanel` (gallery.proto), which FETCHES rows via an RpcCall
+// and maps each row's dotted fields to a card. CatalogPanel is STATIC content —
+// the items are literal, no round-trip — for authored "what's here" surfaces
+// (a capabilities list, a plugin catalog, a feature deck).
+//
+// Depends on affordance.proto (per-item Affordance).
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/affordance.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "CatalogProto";
+
+// PanelDescriptor body variant: a grid/list of authored items.
+message CatalogPanel {
+  // The items, in display order.
+  repeated CatalogItem items = 1 [(google.api.field_behavior) = REQUIRED];
+  // Presentation hint; renderers substitute a modality-appropriate idiom.
+  CatalogStyle style = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Optional placeholder shown when `items` is empty.
+  string placeholder = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One catalog item.
+message CatalogItem {
+  // Stable identifier.
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Primary label / name.
+  string name = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional description / blurb.
+  string description = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional category / kind chip (e.g. "tool", "resource").
+  string tag = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Optional status badge (e.g. "connected", "Next", "beta"). Empty = no badge.
+  string state = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional icon key the host maps to a vector glyph.
+  string icon = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Optional per-item affordance (e.g. "Open", "Connect").
+  Affordance action = 7 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Presentation hint for a CatalogPanel. Advisory.
+enum CatalogStyle {
+  CATALOG_STYLE_UNSPECIFIED = 0;
+  // A responsive grid of cards (web default).
+  CATALOG_STYLE_GRID = 1;
+  // A vertical list (tui default; chat renders as bullets).
+  CATALOG_STYLE_LIST = 2;
+}
