@@ -1,0 +1,39 @@
+// TerminalPanel — an interactive terminal spliced to a remote pty over a
+// WebSocket (xterm.js in the browser; a native pty elsewhere).
+//
+// Unlike the table / gallery / lro shapes there is NO populate RPC: the panel
+// opens a WebSocket to `url` and relays raw terminal bytes both ways, plus a
+// small JSON control channel for resize. It is the shape a cloud dev-workspace
+// uses to host a tool session — a login shell, or an agent CLI (opencode /
+// claude / codex) running under a pty in the workspace pod. The transport is
+// gated upstream (e.g. by ws-proxy's session check), so the descriptor carries
+// no credential; the browser's same-site session rides the WebSocket handshake.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "TerminalProto";
+
+// "Open a WebSocket to a pty and render an interactive terminal" shape.
+message TerminalPanel {
+  // WebSocket URL to connect to. May contain `{field}` placeholders that the
+  // renderer resolves from the active row / render context before connecting,
+  // so ONE declarative panel serves every row (e.g.
+  // "wss://{name}.ws.fastverk.com/__terminal?tool=bash" fills `{name}` from the
+  // selected workspace). Must be a ws:// or wss:// URL after substitution.
+  string url = 1 [(google.api.field_behavior) = REQUIRED];
+  // Tool identifier surfaced in the header + telemetry (e.g. "bash",
+  // "opencode", "claude"). Display only — the command the pty runs is decided
+  // server-side from the workspace's tool config, not from this field.
+  string tool = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Pre-fit terminal dimensions. The renderer fits the terminal to its
+  // container on open (and on window resize) and sends a resize control frame,
+  // so these are only the defaults used before the first fit. 0 = renderer
+  // default (80x24).
+  uint32 cols = 3 [(google.api.field_behavior) = OPTIONAL];
+  uint32 rows = 4 [(google.api.field_behavior) = OPTIONAL];
+}

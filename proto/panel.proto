@@ -19,6 +19,7 @@ import "proto/lro.proto";
 import "proto/prompt.proto";
 import "proto/rpc.proto";
 import "proto/table.proto";
+import "proto/terminal.proto";
 
 option java_multiple_files = true;
 option java_package = "meridian.ui.v1";
@@ -75,6 +76,11 @@ message PanelDescriptor {
     // round-trip): FormPanel is the CRUD/detail surface bound to a
     // record, with a `submit` RPC in EDIT mode.
     FormPanel form = 9;
+    // Interactive terminal spliced to a remote pty over a WebSocket (xterm.js
+    // in the browser). No populate RPC — the panel opens `terminal.url` and
+    // relays bytes both ways. Used for cloud dev-workspace tool sessions (a
+    // shell, or an agent CLI like opencode/claude/codex under a pty).
+    TerminalPanel terminal = 10;
   }
 }
 

@@ -90,6 +90,7 @@ proto_library(
         "prompt.proto",
         "rpc.proto",
         "table.proto",
+        "terminal.proto",
         "view.proto",
     ],
     deps = [
