@@ -58,6 +58,66 @@ export interface MountOptions<TTheme = Theme, TFactory = AdhocDomFactory> {
   context?: RenderContext;
   /** Bespoke (AdhocPanel) handlers keyed by `handler_id`. */
   adhoc?: AdhocRegistry<TFactory>;
+  /**
+   * Host glyph resolver: maps an `icon` KEY (ChoiceOption.icon, Affordance.icon,
+   * ConnectTarget.icon, CatalogItem.icon — brand-neutral keys the descriptor
+   * carries, e.g. "github", "download") to a renderer-native glyph. The
+   * "renderer draws, host wires" icon seam: the descriptor names the icon, the
+   * host supplies the vector. Return type is renderer-specific (a ReactNode for
+   * the React adapter, an HTMLElement for the web-components renderer), so it is
+   * loosely typed here. Absent ⇒ renderers emit the key as a `data-icon`
+   * attribute (never dropped) and draw no glyph.
+   */
+  renderIcon?: (key: string) => unknown;
+  /**
+   * Host transcoder for a GrammarPanel — a declarative grammar (markdown /
+   * mermaid / plantuml / graphviz / vega). This is the surface's capability set:
+   * the host wires it ONLY for languages this surface can display, returning a
+   * live result for those, or `null`/nothing for the rest → the renderer degrades
+   * down the ladder (native markdown → `alt` → source text). Kits import no
+   * grammar library.
+   *
+   * The return is a LIVE result, not just markup: a renderer-native node
+   * (HTMLElement for web-components, ReactNode for React) that is already
+   * interactive once mounted (vega-embed tooltips / zoom / brush "just work"), OR
+   * a {@link GrammarHandle} whose `element`/`node` is mounted and whose optional
+   * `dispose` frees the runtime, and whose `getSignal`/`onSignal` expose the
+   * grammar's live selections to the FRAMEWORK — which resolves them the
+   * meridian-idiomatic way (a `signal` FieldBinding source, rpc.proto) so an
+   * interactive selection fires an RpcCall through the RpcInvoker like every
+   * other panel action. A plain node return is equally valid. Loosely typed
+   * (renderer-specific); `data` is the decoded google.protobuf.Struct.
+   */
+  renderGrammar?: (opts: {
+    language: string;
+    source: string;
+    data?: unknown;
+  }) => unknown;
+}
+
+/**
+ * A live handle a host MAY return from {@link MountOptions.renderGrammar} for an
+ * interactive grammar (chiefly Vega). `element`/`node` is what the renderer
+ * mounts; `dispose` frees the runtime on unmount. `getSignal`/`onSignal` expose
+ * the grammar's named signals (Vega params/selections) so the framework can
+ * resolve a `signal` FieldBinding (rpc.proto) — a chart selection thus populates
+ * an RpcCall request and fires through the RpcInvoker, exactly like a Table
+ * row-action pulls from the selected row. No bespoke event bus. A plain node
+ * return is equally valid (the simpler, non-signal form). Interaction is a second
+ * capability dimension: a surface that can't do it degrades to a static snapshot
+ * (no live signals → a signal-bound call is inert), never losing content.
+ */
+export interface GrammarHandle {
+  /** The node to mount — HTMLElement (web-components) or ReactNode (React). */
+  element?: unknown;
+  /** Alias of `element` for React-flavored hosts. */
+  node?: unknown;
+  /** Cleanup on unmount / re-render (dispose the chart view + listeners). */
+  dispose?(): void;
+  /** Read a named signal's current value — resolves a `signal` FieldBinding. */
+  getSignal?(name: string): unknown;
+  /** Subscribe to a named signal; the framework re-fires signal-bound RpcCalls. */
+  onSignal?(name: string, cb: (value: unknown) => void): void;
 }
 
 /**

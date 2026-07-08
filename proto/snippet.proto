@@ -1,0 +1,46 @@
+// Snippet — meridian's copyable code-artifact content primitive: a block of
+// literal text (config, a command, JSON/TOML) with an optional language hint,
+// human label, and destination path. Brand-neutral and modality-agnostic: the
+// renderer decides the affordance (web = `<pre>` + a copy button, tui = a
+// bordered box + OSC52 copy, chat = a fenced code block). It is reused nested
+// (a `ConnectTarget` carries its config snippets) and exposed as a panel via
+// `SnippetPanel`.
+//
+// Unlike `FormField`/`PromptPanel` (which COLLECT input) a Snippet only
+// PRESENTS a fixed artifact for the reader to copy — there is no round-trip.
+//
+// Depends on nothing but the field_behavior annotation.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "SnippetProto";
+
+// A copyable code/text artifact. Snippets are copyable by definition; renderers
+// always surface a copy affordance appropriate to their modality.
+message Snippet {
+  // The literal content to display and copy. Multi-line is fine; renderers
+  // preserve whitespace (monospace / preformatted).
+  string content = 1 [(google.api.field_behavior) = REQUIRED];
+  // Optional language / format hint for highlighting or fencing
+  // (e.g. "json", "bash", "toml", "ts"). Advisory — renderers that don't
+  // highlight ignore it.
+  string language = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Optional human label for the snippet ("Terminal — Claude Code").
+  string label = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional destination path the snippet belongs at ("~/.cursor/mcp.json").
+  // Renderers may show it as a caption above the content.
+  string path = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// PanelDescriptor body variant: a panel that is a single Snippet. The reusable
+// `Snippet` is nested by `ConnectTarget`; this wrapper exposes it as a
+// standalone panel shape, matching the `*Panel` convention.
+message SnippetPanel {
+  // The snippet to render.
+  Snippet snippet = 1 [(google.api.field_behavior) = REQUIRED];
+}

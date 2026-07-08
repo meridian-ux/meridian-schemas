@@ -48,6 +48,14 @@ message FieldBinding {
     // Nested binding set — for building sub-messages (e.g. assemble
     // a `decider` Identity from several scalar bindings).
     NestedBinding nested = 6;
+    // Pull the current value of a named GRAMMAR/PANEL SIGNAL — an interactive
+    // GrammarPanel's Vega param/selection (a brushed range, a clicked mark),
+    // read via the renderGrammar handle's getSignal(name). Mirrors row_field /
+    // form_field: it makes a chart selection a first-class binding source, so an
+    // Action (or the panel's RpcCall) fires through the RpcInvoker like every
+    // other interaction — no bespoke event bus. Inert on surfaces with no live
+    // signals (static / degraded renders).
+    string signal = 7;
   }
 }
 

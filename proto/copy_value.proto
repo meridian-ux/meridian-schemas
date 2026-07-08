@@ -1,0 +1,39 @@
+// CopyValue — meridian's labeled copy-to-clipboard content primitive: a short
+// value (an endpoint URL, an id, a token) with an optional label the reader
+// copies in one gesture. Brand-neutral and modality-agnostic: web = a pill /
+// chip with a copy affordance, tui = the value + a copy keybinding, chat = the
+// value as inline code. Distinct from `Snippet` (a multi-line code block); a
+// CopyValue is a single inline datum. Reused nested (`ConnectFlowPanel.endpoint`
+// is the shared endpoint chip) and exposed as a panel via `CopyValuePanel`.
+//
+// Depends on nothing but the field_behavior annotation.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "CopyValueProto";
+
+// A labeled, copyable inline value.
+message CopyValue {
+  // The value to display and copy (e.g. "mcp.example.com/mcp").
+  string value = 1 [(google.api.field_behavior) = REQUIRED];
+  // Optional label shown beside the value ("Endpoint").
+  string label = 2 [(google.api.field_behavior) = OPTIONAL];
+  // If true, the renderer masks the value until revealed and treats it as
+  // sensitive (e.g. an API token). Copy still yields the plaintext.
+  bool secret = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional one-liner help shown under the value.
+  string help = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// PanelDescriptor body variant: a panel that is a single CopyValue. The
+// reusable `CopyValue` is nested by `ConnectFlowPanel`; this wrapper exposes it
+// as a standalone panel shape, matching the `*Panel` convention.
+message CopyValuePanel {
+  // The value to render.
+  CopyValue value = 1 [(google.api.field_behavior) = REQUIRED];
+}

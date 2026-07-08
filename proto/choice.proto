@@ -1,0 +1,58 @@
+// ChoicePanel — meridian's single-select content primitive: pick one of a fixed
+// list of labeled options. Brand-neutral and modality-agnostic: the renderer
+// maps the choice to its idiom (web = segmented tabs, tui = an arrow-key list,
+// chat = numbered options). The `style` field is only a HINT; each renderer
+// picks the affordance that fits its modality.
+//
+// Distinct from `EnumSelection` (form.proto), which is one input inside a
+// FormPanel/PromptPanel bound to a `field_id` and collected on submit. A
+// ChoicePanel is a standalone selector — the selection drives what the
+// surrounding view shows (e.g. which `ConnectTarget` is active), not a form
+// value returned to a caller.
+//
+// Depends on nothing but the field_behavior annotation.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "ChoiceProto";
+
+// PanelDescriptor body variant: a single-select among labeled options.
+message ChoicePanel {
+  // The selectable options, in display order.
+  repeated ChoiceOption options = 1 [(google.api.field_behavior) = REQUIRED];
+  // Id of the option selected by default (else the first option).
+  string default_option_id = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Presentation hint; renderers substitute a modality-appropriate idiom.
+  ChoiceStyle style = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional prompt / question shown above the options.
+  string prompt = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One selectable option.
+message ChoiceOption {
+  // Stable identifier.
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Display label.
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional secondary line / blurb.
+  string description = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional icon key the host maps to a vector glyph.
+  string icon = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Presentation hint for a ChoicePanel. Advisory; the renderer picks the
+// modality-appropriate affordance.
+enum ChoiceStyle {
+  CHOICE_STYLE_UNSPECIFIED = 0;
+  // Inline segmented control / tab strip (web default).
+  CHOICE_STYLE_SEGMENTED = 1;
+  // A vertical list of options (tui default; good for many options).
+  CHOICE_STYLE_LIST = 2;
+  // A collapsed dropdown / select.
+  CHOICE_STYLE_DROPDOWN = 3;
+}
