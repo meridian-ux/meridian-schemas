@@ -1,0 +1,74 @@
+// NavTree — meridian's hierarchical-navigation primitive: the left rail /
+// menu / tree, declared as data instead of reinvented in every host.
+//
+// The tier ABOVE ViewDescriptor (view.proto) and PanelDescriptor (panel.proto).
+// PanelBundle is a flat `repeated PanelDescriptor` with no grouping, so the nav
+// structure — sections, groups, ordering, tab-like folding — has always been
+// host-owned: the web rail's `buildRail`, the TUI's list, the chat menu each
+// reinvent it, and a consumer cannot say "these panels are one group." NavTree
+// closes that: a declarative sections → groups → leaves tree where each leaf
+// targets a panel or a view.
+//
+// Brand- and framework-neutral, like every meridian descriptor: it names the
+// nav *intent*; each surface transcodes it to whatever it can display.
+//   - web  — a collapsible rail: sections as headers, groups as expandable rows,
+//            leaves as items, `badge` as a pill.
+//   - tui  — a tree widget: arrow-keys navigate, space/enter expand/collapse, the
+//            active leaf drives the right pane; `badge` after the label.
+//   - chat — a nested numbered menu ("Builds — 1) Cache  2) Workers … 1.1 Cache
+//            details"); selecting a number loads that panel/view.
+// Degradation ladder: a renderer that can't do a tree renders the leaves flat
+// (today's behavior) — never worse than now.
+//
+// Delivery: a NavTree is pure data. A host may ship it as a compiled artifact
+// (like a PanelBundle) or serve it dynamically per caller via
+// meridian.ui.v1.LayoutService.GetNavTree (layout_service.proto) — the tree
+// itself carries no transport assumption.
+//
+// Depends on nothing but the field_behavior annotation; leaves reference panels
+// and views by id (string), not by import.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "NavTreeProto";
+
+// A hierarchical navigation structure: an ordered forest of nodes. The roots
+// are the top-level sections; each node is either a leaf (targets one panel or
+// view) or a group (has children, no target).
+message NavTree {
+  // Top-level sections, in display order.
+  repeated NavNode roots = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// One node in a NavTree. A node is a LEAF when it sets a `target` (it selects a
+// panel/view when activated) or a GROUP when it has `children` and no target
+// (it expands/collapses). A node with neither is an inert label; a node with
+// both is invalid — renderers treat `target` as authoritative and ignore
+// children.
+message NavNode {
+  // Stable key — the routing + telemetry id (e.g. "builds", "builds.cache").
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Display label (resolved copy).
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+  // Icon-seam key the host maps to a glyph (e.g. "hammer"). Optional.
+  string icon = 3 [(google.api.field_behavior) = OPTIONAL];
+  // A leaf targets exactly one surface. Leave unset for a group node.
+  oneof target {
+    // Id of a PanelDescriptor (panel.proto) to render when activated.
+    string panel_id = 4;
+    // Id of a ViewDescriptor (view.proto) to render when activated.
+    string view_id = 5;
+  }
+  // Child nodes — makes this a group (rendered as an expandable section). A
+  // node sets EITHER `target` (leaf) OR `children` (group), not both.
+  repeated NavNode children = 6 [(google.api.field_behavior) = OPTIONAL];
+  // For a group: expanded by default. Ignored for leaves.
+  bool default_open = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Optional count/status pill shown after the label (e.g. "3", "!").
+  string badge = 8 [(google.api.field_behavior) = OPTIONAL];
+}
