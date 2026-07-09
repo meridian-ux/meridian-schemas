@@ -6,9 +6,11 @@ TUI, and chat — per meridian's content-negotiation philosophy (a descriptor na
 ladder rather than blanking). Nothing here is web-only.
 
 Motivation is concrete: building the fastverk RBE console (Vega dashboards +
-grouped tabbed nav) hit each of these gaps and had to work around them host-side.
-The point of this doc is to pull those workarounds *up* into the framework so every
-consumer and every renderer gets them.
+grouped tabbed nav) hit §1–§5 host-side, and revamping the fastverk **Workspaces**
+console (a resource manager: cards, lifecycle actions, create/edit forms, a
+key→value files editor, delete-confirms) hit §6–§8 the same way — every one of them a
+custom adhoc handler + hand-wired REST calls. The point of this doc is to pull those
+workarounds *up* into the framework so every consumer and every renderer gets them.
 
 **Principle for all of the below:** a primitive is only "in meridian" if it has a
 proto shape, a degradation ladder, and a rendering story for **all three**
@@ -142,15 +144,90 @@ render, which is already the documented fallback).
 
 ---
 
+## 6. `ResourceCard` + `ActionSet` — declarative cards with lifecycle actions
+
+**Problem.** Building the fastverk **Workspaces** console (a card per dev workspace:
+phase badge, metadata chips, an idle countdown, launch buttons, and a
+suspend/resume/reconfigure/delete action row) had to be **100% host-side** — a custom
+adhoc handler drawing HTML + wiring every button to a REST call. Meridian has no
+primitive for "a resource rendered as a card with a set of actions," so every console
+that manages resources (workspaces, deployments, builds, agents) reinvents it, and
+none of it renders off-web.
+
+**Proposal.** A `ResourceCard` descriptor (title, subtitle, an icon, a status
+`badge`, a `repeated MetaField` chip row) carrying an `ActionSet` — a list of
+`Action { id, label, style: DEFAULT|PRIMARY|DANGER, RpcCall invoke, ConfirmSpec
+confirm? }`. A `CardGridPanel { RpcCall populate, ResourceCardTemplate }` binds a row
+list to the template (like `TablePanel`, but cards).
+
+```proto
+message Action {
+  string id = 1;
+  string label = 2;
+  ActionStyle style = 3;         // DEFAULT | PRIMARY | DANGER
+  RpcCall invoke = 4;            // run through the RpcInvoker
+  ConfirmSpec confirm = 5;       // optional destructive-action guard (§8)
+  string visible_when = 6;       // simple predicate over the row (e.g. "phase==Suspended")
+}
+message ActionSet { repeated Action actions = 1; }
+```
+
+**Per modality.** web — a card with a button row (`DANGER` = the red action,
+confirm-gated). tui — a list row; actions on a context menu / number keys, the active
+row driving them. chat — the resource as a block with actions as buttons or a numbered
+pick. `visible_when` is how "Resume only when Suspended" degrades everywhere.
+
+**Ladder.** A renderer without cards falls back to a `TablePanel` view of the same
+rows with the actions as a trailing column — never worse than today.
+
+---
+
+## 7. `FormPanel` / `CreateDialog` — declarative create/edit forms
+
+**Problem.** The Workspaces create dialog, the reconfigure dialog, and the config
+editor (including a **key→value files map** editor) are all host-side modals with
+hand-wired submit → RPC. `LroPanel` submits *one* action but isn't a general
+create/edit **form** with typed fields, and there's no map/list field type at all.
+
+**Proposal.** A `FormPanel { repeated FormField fields, RpcCall submit, RpcCall
+prefill? }` where `FormField` is a typed input: `TEXT | SELECT (with
+EnumSelection.options_source) | TEXTAREA | KEY_VALUE_MAP | TOGGLE`, each with
+label/placeholder/required/pattern. `prefill` populates an edit form; `KEY_VALUE_MAP`
+is the reusable "mounted files / labels / env" editor.
+
+**Per modality.** web — a modal (or inline) form. tui — a field-stack the user tabs
+through. chat — a guided Q&A that collects the fields, then submits. The `SELECT`
+already has cross-modal precedent (`EnumSelection.options_source`, 0.4.0).
+
+---
+
+## 8. `ConfirmSpec` — the destructive-action guard
+
+**Problem.** Every delete in the console re-implements a confirm modal host-side.
+
+**Proposal.** A tiny `ConfirmSpec { title, message, confirm_label, bool destructive }`
+attached to an `Action` (§6). The renderer gates the `invoke` behind it: web — a confirm
+dialog; tui — a yes/no prompt; chat — a "reply `yes` to confirm" turn. Small, but it's
+the difference between "delete" being safe on every surface vs. web-only.
+
+---
+
 ## Priority / sequencing
 
 1. **`NavTree`** (§1) + **renderView maturation** (§2) — the structural wins; they
    remove the two biggest host-side workarounds (rail + tabs) and are pure additions.
 2. **`populate` on Grammar/Stat** (§3) — small proto add, big ergonomics win; unblocks
    live charts/KPIs the meridian way.
-3. **`ChartSpec`** (§4) — the ambitious cross-modal charting primitive; largest scope,
+3. **`ResourceCard` + `ActionSet` (§6) + `ConfirmSpec` (§8)** — the resource-management
+   pair; together they remove the biggest host-side surface (the whole Workspaces
+   manager: cards, lifecycle actions, delete-confirm) and generalize to every
+   resource console (builds, agents, deployments). `ConfirmSpec` is tiny and rides §6.
+4. **`FormPanel` / `CreateDialog` (§7)** — the create/edit forms, incl. the
+   `KEY_VALUE_MAP` field; matures `LroPanel` into a general typed form.
+5. **`ChartSpec`** (§4) — the ambitious cross-modal charting primitive; largest scope,
    largest payoff for non-web surfaces.
-4. **Signal cross-modal semantics** (§5) — smallest; formalizes what 0.5.0 started.
+6. **Signal cross-modal semantics** (§5) — smallest; formalizes what 0.5.0 started.
 
 Each is additive (new fields / messages), so it's a clean MINOR bump per the registry
-flow. §1–§3 are the recommended next-release slice.
+flow. §1–§3 (and §6/§8, which the Workspaces console just proved out host-side) are the
+recommended next-release slice.
