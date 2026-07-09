@@ -1,6 +1,6 @@
 module(
     name = "meridian_schemas",
-    version = "0.5.0",
+    version = "0.6.0",
     compatibility_level = 1,
 )
 
@@ -11,6 +11,14 @@ module(
 # (@savvifi/meridian-schemas). Every renderer (meridian-web, meridian-web-react,
 # meridian-tui, …) and every emitter (aion) depends on this module; it depends on
 # none of them. No Java/Rust/Swift here — those bindings live with each renderer.
+#
+# 0.6.0 adds the NavTree navigation primitive (nav_tree.proto) and the OPTIONAL
+# server-driven delivery tier: meridian.ui.v1.LayoutService (layout_service.proto)
+# — the first gRPC service in meridian, the proto analogue of the RpcInvoker host-
+# transport contract. It is additive (new messages + one optional service); the
+# static descriptor path is unchanged. protobuf-es 2.x emits the service
+# descriptor into the TS surface; other language grpc stubs are generated per
+# renderer/host repo.
 
 # TypeScript surface.
 bazel_dep(name = "aspect_rules_js", version = "3.1.2")

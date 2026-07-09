@@ -1,0 +1,110 @@
+// LayoutService — meridian's OPTIONAL server-driven delivery tier: the gRPC
+// contract a host implements to serve navigation and layout *dynamically*,
+// computed per caller, instead of shipping them as frozen build artifacts.
+//
+// This is the first `service` in meridian, and it is deliberately additive.
+// Everything meridian defines is otherwise pure descriptor data (NavTree,
+// ViewDescriptor, PanelDescriptor, Theme) that a host may ship as a compiled
+// `.binpb` and load statically. That static path stays fully supported. But it
+// forces every dynamic decision — which sections a user sees, which panels are
+// entitled, live dashboards — into host-side glue. LayoutService lets a host
+// answer those questions on the server:
+//
+//   - GetNavTree  — the rail/menu for THIS caller (replaces a static NavTree
+//                   file and any host-side rail composition).
+//   - GetView     — one composed page/view, resolved per caller.
+//   - GetPanel    — one panel descriptor, resolved per caller (replaces serving
+//                   a frozen PanelBundle when the set is dynamic).
+//   - WatchNavTree / WatchView — server-streaming push, so nav and dashboards
+//                   update live (entitlement change, a plugin comes online, an
+//                   admin edits layout) instead of only on reload.
+//
+// NEUTRALITY (this is load-bearing). LayoutService is the proto analogue of the
+// `RpcInvoker` / `RenderContext` host-transport contracts this module already
+// ships (see src/uiview/transport.ts): it is a *contract*, not an
+// implementation, and it references ONLY meridian.ui.v1 descriptor messages —
+// no host/app/brand type appears here. Caller dimensions that drive server-side
+// decisions (tenant, role, entitlement, feature flags) travel as OPAQUE strings
+// in `LayoutContext.attributes`; the SERVER interprets them, the contract does
+// not. A meridian app opts in by implementing this service; one that prefers
+// static bundles simply never does. Language stubs (tonic, connect-es,
+// java-grpc) are generated per renderer/host repo from these definitions.
+//
+// Content negotiation: `LayoutContext.surface` names the target modality so the
+// server can tailor the tree/view/panel to what that surface renders — the same
+// "descriptor names intent; each surface transcodes" philosophy, pushed to the
+// server for the cases where the shape itself should differ by surface.
+//
+// Depends on nav_tree.proto (NavTree), view.proto (ViewDescriptor), and
+// panel.proto (PanelDescriptor) for the response types, and field_behavior.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/nav_tree.proto";
+import "proto/panel.proto";
+import "proto/view.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "LayoutServiceProto";
+
+// The host-implemented, brand-neutral layout delivery service. Optional: a
+// meridian app either implements it (dynamic) or ships static descriptors.
+service LayoutService {
+  // The navigation tree for the calling context. Replaces a static NavTree
+  // artifact and any host-side rail/menu composition.
+  rpc GetNavTree(GetNavTreeRequest) returns (NavTree);
+
+  // Server-streaming navigation: emits the current NavTree immediately, then a
+  // fresh one whenever it changes for this caller (entitlement change, a plugin
+  // registering/deregistering, an admin edit). The stream stays open.
+  rpc WatchNavTree(GetNavTreeRequest) returns (stream NavTree);
+
+  // One composed view/page, resolved for the calling context.
+  rpc GetView(GetViewRequest) returns (ViewDescriptor);
+
+  // Server-streaming view: the current ViewDescriptor, then a fresh one on each
+  // change (a live dashboard whose slots/data shift over time).
+  rpc WatchView(GetViewRequest) returns (stream ViewDescriptor);
+
+  // One panel descriptor, resolved for the calling context. Serves the dynamic
+  // equivalent of an entry in a static PanelBundle.
+  rpc GetPanel(GetPanelRequest) returns (PanelDescriptor);
+}
+
+// The neutral calling context. Carries no host/app/brand type: modality + a
+// bag of opaque dimensions the SERVER interprets (never the contract).
+message LayoutContext {
+  // Target modality, so the server can tailor the response to what the surface
+  // renders: "web" | "tui" | "chat" (extensible). Empty = server default.
+  string surface = 1 [(google.api.field_behavior) = OPTIONAL];
+  // BCP-47 locale for copy resolution (e.g. "en-US"). Empty = server default.
+  string locale = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Opaque host-supplied dimensions that drive server-side decisions — tenant,
+  // role, entitlement ids, feature flags, etc. Keys and values are meaningful
+  // ONLY to the implementing host; meridian passes them through untouched. This
+  // is how per-user/per-role/per-entitlement layouts stay expressible without
+  // leaking any host schema into the neutral contract.
+  map<string, string> attributes = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetNavTree / WatchNavTree.
+message GetNavTreeRequest {
+  LayoutContext context = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetView / WatchView.
+message GetViewRequest {
+  // Stable ViewDescriptor id to resolve (e.g. "products-detail-view").
+  string view_id = 1 [(google.api.field_behavior) = REQUIRED];
+  LayoutContext context = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetPanel.
+message GetPanelRequest {
+  // Stable PanelDescriptor id to resolve.
+  string panel_id = 1 [(google.api.field_behavior) = REQUIRED];
+  LayoutContext context = 2 [(google.api.field_behavior) = OPTIONAL];
+}
