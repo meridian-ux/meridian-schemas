@@ -44,6 +44,13 @@ message FormField {
     EnumSelection enum_selection = 6;
     // Text input with echo suppressed (e.g. CFN `NoEcho`).
     MaskedInput masked = 7;
+    // Boolean checkbox / toggle (JSON Schema `boolean`).
+    BooleanToggle boolean = 9;
+    // Decimal (floating-point) number input (JSON Schema `number`);
+    // IntegerSpinner is whole-number only.
+    NumberInput number = 10;
+    // A nested object → a sub-form of FormFields (JSON Schema `object`).
+    NestedForm nested = 11;
   }
 }
 
@@ -122,4 +129,33 @@ message MaskedInput {
   // Length bounds.
   int32 min_length = 4 [(google.api.field_behavior) = OPTIONAL];
   int32 max_length = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Boolean checkbox / toggle. Renders as a checkbox on web, a toggle on
+// desktop, a yes/no selector on TUI. Collected value is a bool.
+message BooleanToggle {
+  // Pre-checked state.
+  bool default_value = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Decimal (floating-point) number input with optional bounds/step. Use for
+// non-integer numbers — IntegerSpinner is whole-number only.
+message NumberInput {
+  // Minimum value (inclusive).
+  double min = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Maximum value (inclusive).
+  double max = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Pre-filled value.
+  double default_value = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Increment for arrow keys / spinner buttons; zero → renderer default.
+  double step = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// A nested object → a sub-form. Each child FormField collects one property of
+// the object; the renderer returns a nested value keyed by this field's
+// field_id, whose members are keyed by each child's field_id. Recursive, so an
+// object property that is itself an object nests another NestedForm.
+message NestedForm {
+  // The object's properties, each as its own FormField.
+  repeated FormField fields = 1 [(google.api.field_behavior) = REQUIRED];
 }
