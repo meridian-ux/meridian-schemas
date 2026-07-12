@@ -85,6 +85,21 @@ message TableColumn {
   ColumnFormat format = 3 [(google.api.field_behavior) = OPTIONAL];
   // Hint for desktop / web renderers; TUI hosts may ignore.
   int32 pref_width = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Optional: render the cell as a link to a related entity. Present ⇒ the
+  // renderer draws the value as a link and asks the host to resolve the
+  // destination (meridian stays URL-agnostic — the host owns routes).
+  ColumnLink link = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Renders a column's cell as a link navigating to a related entity. The
+// renderer never builds a URL itself — it hands the host the target kind + the
+// cell's value (the entity's id) and the host maps that to its own route (the
+// `resolveHref` seam, the link peer of the icon / grammar host resolvers). A
+// renderer with no host resolver draws plain text, never a dead link.
+message ColumnLink {
+  // The kind of entity the cell value identifies, e.g. "identity.user". Empty ⇒
+  // the view's own subject kind (a self/detail link to this row's entity).
+  string target_kind = 1 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // One action button exposed on the row's actions bar.
