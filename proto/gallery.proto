@@ -47,4 +47,9 @@ message CardSpec {
   string href_field = 5 [(google.api.field_behavior) = OPTIONAL];
   // Path to the action label shown on the card (e.g. "Connect", "Manage").
   string action_label_field = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Path to an image URL rendered as the card's visual (a screenshot, media
+  // thumbnail, logo). When set, the card/gallery shows the image; kits that
+  // support a lightbox (mui-kit) use it as the replay stage + filmstrip source.
+  // Distinct from `icon_field` (a glyph key) — this is a real image src.
+  string image_field = 7 [(google.api.field_behavior) = OPTIONAL];
 }
