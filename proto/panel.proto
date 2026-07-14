@@ -123,7 +123,65 @@ message PanelDescriptor {
     // delta/trend is computed from `previous`/`series`, never author-marked. See
     // stat.proto.
     StatPanel stat = 18;
+    // The header of a DETAIL view: a title + optional subtitle/status resolved
+    // from the record, plus a strip of labeled descriptor rows. Fetches the
+    // single record via `populate` (bound by the view's `subject_id`). Header
+    // actions are carried on ViewDescriptor.actions (HEADER / OVERFLOW), not here.
+    DetailHeaderPanel detail_header = 19;
+    // A read-only key/value card for one record — the entity "detail section"
+    // rendered as a labeled-value grid (NOT disabled inputs). Fetches the record
+    // via `populate` (bound by the view's `subject_id`). This is the READONLY
+    // detail surface; FormPanel(EDIT) remains for editable forms.
+    RecordCardPanel record_card = 20;
   }
+}
+
+// The header of a DETAIL view. Renders the record's title prominently, an
+// optional subtitle + status resolved from the record, and a strip of labeled
+// descriptor rows. The record is fetched once via `populate`, with the detail
+// subject id (ViewDescriptor.subject_id) bound into `id_field` of the request.
+// Header-level actions live on ViewDescriptor.actions (HEADER / OVERFLOW).
+message DetailHeaderPanel {
+  // Resolved display title (static copy). When `title_source_path` is set and
+  // resolves to a non-empty value, that wins over this literal.
+  string title = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Dotted path into the fetched record for the title (e.g. "data.name").
+  // Optional — falls back to `title`.
+  string title_source_path = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Dotted path into the record for a subtitle line (e.g. "data.sponsor").
+  string subtitle_source_path = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Dotted path into the record for a status value, rendered as a chip.
+  string status_source_path = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Labeled descriptor rows shown under the title (label + a dotted source path).
+  repeated DescriptorRow descriptor_rows = 5 [(google.api.field_behavior) = OPTIONAL];
+  // RPC that fetches the single record. The renderer invokes it once with the
+  // request field named by `id_field` set to the view's subject_id.
+  RpcCall populate = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Request field the subject id binds to (default "id").
+  string id_field = 7 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// A read-only key/value card for one record. Each field renders as a labeled
+// value read from the fetched record at the field's `field_id` (dotted path).
+message RecordCardPanel {
+  // Fields to display, in order. Reuses FormField for label/id/kind; the value
+  // is read from the record at `field_id` (dotted path) and rendered read-only.
+  repeated FormField fields = 1 [(google.api.field_behavior) = OPTIONAL];
+  // RPC that fetches the single record (see DetailHeaderPanel.populate).
+  RpcCall populate = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Request field the subject id binds to (default "id").
+  string id_field = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Singular noun for labels / empty states (e.g. "product").
+  string item_noun = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One labeled descriptor row in a DetailHeaderPanel: a static label and a dotted
+// path into the record for its value.
+message DescriptorRow {
+  // Display label (e.g. "Type", "Status").
+  string label = 1 [(google.api.field_behavior) = REQUIRED];
+  // Dotted path into the record for the value (e.g. "data.type").
+  string source_path = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 // A form of fields bound to a record — the entity "detail section" /

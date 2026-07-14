@@ -45,6 +45,10 @@ message ViewDescriptor {
   repeated Slot slots = 7 [(google.api.field_behavior) = REQUIRED];
   // View-level (header) actions.
   repeated Action actions = 8 [(google.api.field_behavior) = OPTIONAL];
+  // For a DETAIL view: the id of the record this view is about. Detail panels
+  // (detail_header / record_card) bind it into their `populate` request so the
+  // renderer fetches the right record. Empty on LIST / non-entity views.
+  string subject_id = 9 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // The kind of view.
