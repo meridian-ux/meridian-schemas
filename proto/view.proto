@@ -107,6 +107,17 @@ message Slot {
   // dashboards-of-views, entity detail sections, and any layout-in-a-layout. When
   // set, it takes precedence over `panel`.
   ViewDescriptor sub_view = 8 [(google.api.field_behavior) = OPTIONAL];
+  // REPEAT the `sub_view` once per row — the composition primitive for a dynamic
+  // list of rich items (a section per entity, a card-deck of detail views, …).
+  // The renderer fetches `sub_view_populate`, resolves `sub_view_rows_field` to a
+  // row list, and renders `sub_view` for EACH row with that row as the ambient
+  // record. Panels inside the repeated sub_view with NO `populate` of their own
+  // read from that record: a FormPanel/DetailHeaderPanel binds its fields to the
+  // row, a TablePanel takes its rows from the row's `rows_field`. When
+  // `sub_view_populate` is empty, `sub_view` renders once (static composition).
+  RpcCall sub_view_populate = 9 [(google.api.field_behavior) = OPTIONAL];
+  // Path within the `sub_view_populate` response to the row list (a `repeated`).
+  string sub_view_rows_field = 10 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Where a slot goes within its layout. Fields are interpreted by the active
