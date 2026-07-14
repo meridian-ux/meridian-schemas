@@ -95,10 +95,18 @@ message Slot {
   string title = 4 [(google.api.field_behavior) = OPTIONAL];
   // Arrangement hints, interpreted per the view's Layout mode.
   Placement placement = 5 [(google.api.field_behavior) = OPTIONAL];
-  // The panel rendered in this slot.
-  PanelDescriptor panel = 6 [(google.api.field_behavior) = REQUIRED];
+  // The panel rendered in this slot. Optional now that a slot may instead hold a
+  // nested view (`sub_view`); exactly one of `panel` / `sub_view` is set.
+  PanelDescriptor panel = 6 [(google.api.field_behavior) = OPTIONAL];
   // Slot-level (row) actions.
   repeated Action actions = 7 [(google.api.field_behavior) = OPTIONAL];
+  // A NESTED view rendered in this slot instead of a panel — meridian's
+  // composition primitive: a slot may embed a whole ViewDescriptor (its own
+  // layout + slots + panels), which the renderer draws recursively. Each nested
+  // view is self-contained (its panels populate via their own RpcCalls). Enables
+  // dashboards-of-views, entity detail sections, and any layout-in-a-layout. When
+  // set, it takes precedence over `panel`.
+  ViewDescriptor sub_view = 8 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Where a slot goes within its layout. Fields are interpreted by the active
