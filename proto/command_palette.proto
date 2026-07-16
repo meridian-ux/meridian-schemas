@@ -1,0 +1,118 @@
+// Launchpad — meridian's command-palette / "launchpad" primitive: a searchable,
+// grouped list of commands a user can filter and run, declared as data instead
+// of reinvented in every host.
+//
+// The tier is a SIBLING of NavTree (nav_tree.proto): where NavTree is the
+// persistent rail/tree a user browses, Launchpad is the ephemeral "jump to /
+// run" overlay a user summons (⌘K), types into, and dismisses. Both are pure
+// navigation/action intent; each surface transcodes the same descriptor to
+// whatever it can display.
+//   - web  — a ⌘K modal overlay: a search box + grouped results; ↑/↓ move, ↵
+//            runs the highlighted command's `action`; `shortcut` shown as a kbd.
+//   - tui  — a fuzzy-filter popup (fzf-shaped) over the same commands; ↵ runs it.
+//   - chat — a numbered/slash menu ("/ 1) New product  2) Search …"); the agent
+//            may ALSO resolve a natural-language query to a Command — the seam by
+//            which the launchpad becomes an "AI launchpad" (an unmatched query is
+//            handed to the agent, which returns the Command to run).
+// Degradation ladder: a surface that can't overlay renders the commands as a
+// flat list (groups collapse to their commands) — never worse than a menu.
+//
+// A Command's `action` reuses the existing descriptor vocabulary — an RpcCall
+// (rpc.proto), a PanelDescriptor to open in a focused step (panel.proto, e.g. a
+// create/edit FormPanel), a ViewDescriptor id to navigate to, or a raw route.
+// So the palette shares one action model with ViewDescriptor.Action / the agent:
+// running a command and firing a row action are the same primitive.
+//
+// Delivery: a Launchpad is pure data. A host may ship it as a compiled artifact
+// or serve it dynamically per caller (per-user, entitlement- and relevance-
+// ranked) via meridian.ui.v1.LayoutService (layout_service.proto) — the
+// descriptor carries no transport assumption.
+//
+// Depends on rpc.proto (RpcCall) and panel.proto (PanelDescriptor).
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/panel.proto";
+import "proto/rpc.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "CommandPaletteProto";
+
+// A command palette: an ordered set of command groups plus the empty-search
+// affordances. The host owns the open gesture (⌘K) and the filtering; this
+// descriptor names WHAT can be run, not how the overlay is drawn.
+message Launchpad {
+  // Command groups, in display order. A renderer that can't group renders the
+  // groups' commands as one flat list.
+  repeated CommandGroup groups = 1 [(google.api.field_behavior) = REQUIRED];
+  // Placeholder copy for the search input (e.g. "Search or jump to…").
+  string placeholder = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Command ids to surface first when the search box is empty (recents /
+  // pinned), in display order. Ids not present in `groups` are ignored.
+  repeated string default_command_ids = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// A named section of commands (e.g. "Create", "Navigate", "Recent").
+message CommandGroup {
+  // Stable id (routing + telemetry).
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Display heading (resolved copy). Empty ⇒ an unlabeled group.
+  string title = 2 [(google.api.field_behavior) = OPTIONAL];
+  // The commands in this group, in display order.
+  repeated Command commands = 3 [(google.api.field_behavior) = REQUIRED];
+}
+
+// One runnable command: what it's called, how it's matched, and what it does.
+message Command {
+  // Stable id (routing + telemetry; referenced by Launchpad.default_command_ids).
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  // Primary label (resolved copy).
+  string title = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional secondary line (e.g. the entity type, a description).
+  string subtitle = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Extra match terms beyond the title (synonyms, abbreviations) — the fuzzy
+  // filter searches title + subtitle + keywords.
+  repeated string keywords = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Icon-seam key the host maps to a glyph (e.g. "plus", "search"). Optional.
+  string icon = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Per-command accelerator shown as a kbd hint (e.g. "$mod+K", "g p"). Advisory
+  // — the host wires the actual keybinding. Distinct from the launchpad's own
+  // open gesture.
+  string shortcut = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Optional URL-state hint for hosts whose palette is URL-driven (the aion
+  // studio palette encodes state as `?cmd=<entityType>/<mode>`). Orthogonal to
+  // `action`: a host that round-trips palette state through the URL sets the
+  // link when the command is chosen; a host that runs `action` directly ignores it.
+  string deep_link = 7 [(google.api.field_behavior) = OPTIONAL];
+  // What running the command does. Exactly one arm.
+  oneof action {
+    // Fire an RPC directly through the host's RpcInvoker (e.g. delete, export,
+    // re-run). Same primitive as ViewDescriptor.Action.call.
+    RpcCall rpc = 8;
+    // Open a panel in a focused step (a create/edit FormPanel, a confirm
+    // PromptPanel, a wizard). The host renders it through its ComponentKit /
+    // PanelRenderer, then returns to the palette or dismisses.
+    OpenPanel open_panel = 9;
+    // Navigate to a ViewDescriptor (view.proto) by id — the same target a
+    // NavNode leaf uses.
+    string open_view_id = 10;
+    // Navigate to a raw route/href the host resolves (its router / hrefResolver).
+    Navigate navigate = 11;
+  }
+}
+
+// Open a panel as a focused step of the palette.
+message OpenPanel {
+  // The panel to render (e.g. a FormPanel in EDIT mode with prefilled fields).
+  PanelDescriptor panel = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// Navigate to a host-resolved route.
+message Navigate {
+  // A client route or href (e.g. "/products", "https://…"). The host's router /
+  // hrefResolver interprets it.
+  string route = 1 [(google.api.field_behavior) = REQUIRED];
+}

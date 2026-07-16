@@ -1,0 +1,167 @@
+// Conversation — meridian's streaming agent-chat contract: a turn-based
+// conversation whose answer is a stream of composable BLOCKS (a meridian-native
+// "block kit", Slack-Block-Kit-shaped) plus a transient thinking/working status,
+// declared as data instead of a text blob.
+//
+// This is the neutral promotion of botnoc's `chat.v1` (the MCP-host chat plane):
+// the host composes blocks; structured tool results render as list/fields/table
+// blocks. It sits beside the static descriptors (PanelDescriptor / ViewDescriptor)
+// as the CONVERSATIONAL tier — the surface an agent drives.
+//   - web  — a scrolling transcript of role-aligned bubbles; a `tool` block is a
+//            card that flips running→ok/error; a `status` is a thinking/working
+//            row; a composer sends the next TurnRequest.
+//   - tui  — the transcript as a stacked list; blocks degrade to text (a table
+//            block → an aligned grid, a tool block → a one-line status).
+//   - chat/voice — blocks read out in order; `status` spoken as "working…".
+//
+// Wire form (unchanged from chat.v1, so the promotion is drop-in for the botnoc
+// SSE/POST plane): `TurnRequest` is the POST /turn body; `ConversationEvent` is
+// streamed over SSE (GET /view) as proto3-JSON, one event per `data:` frame,
+// deduped by `seq`. The block-kind payloads are NESTED under `Block` (Block.Table
+// etc.) solely to avoid top-level name collisions in the shared meridian.ui.v1
+// package (e.g. table.proto's TableColumn) — proto3-JSON field names are
+// unaffected, so the emitted JSON is byte-identical to chat.v1.
+//
+// Reserved door: a future block kind may embed a PanelDescriptor (panel.proto)
+// so a message can carry a full meridian panel; the block kinds already overlap
+// the panel shapes (fields / list / table). Left unwired here to keep the
+// promotion additive.
+//
+// Depends on nothing but the field_behavior annotation.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "ConversationProto";
+
+// POST /turn — a user message. The host keys the conversation by the signed-in
+// user (forwarded identity) unless a conversation_id is given.
+message TurnRequest {
+  string message = 1 [(google.api.field_behavior) = REQUIRED];
+  string conversation_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One event in the answer stream. proto3-JSON over SSE; `seq` is monotonic per
+// conversation (client resume via Last-Event-ID).
+message ConversationEvent {
+  uint64 seq = 1 [(google.api.field_behavior) = REQUIRED];
+
+  oneof event {
+    // Append a block, or — if block_id matches one already shown — replace it
+    // (so a `tool` block flips running→ok, an assistant markdown block grows).
+    Block block = 2;
+    // The transient thinking/working indicator (not part of the transcript).
+    Status status = 3;
+    TurnDone done = 4;
+    TurnError error = 5;
+  }
+}
+
+// The agent's live state. Cleared (IDLE) when the turn ends.
+message Status {
+  enum State {
+    STATE_UNSPECIFIED = 0;
+    IDLE = 1;
+    THINKING = 2;   // model is generating
+    WORKING = 3;    // a tool is executing
+  }
+  State state = 1 [(google.api.field_behavior) = REQUIRED];
+  string detail = 2 [(google.api.field_behavior) = OPTIONAL];   // e.g. "Calling forge·list_repos"
+}
+
+// One rendered unit. `block_id` is stable: re-sending with the same id UPDATES
+// the shown block (streaming). `role` drives bubble alignment.
+message Block {
+  string block_id = 1 [(google.api.field_behavior) = REQUIRED];
+  string role = 2 [(google.api.field_behavior) = REQUIRED];     // "user" | "assistant"
+
+  oneof kind {
+    Markdown markdown = 3;
+    Context context = 4;    // muted provenance line (icon + text)
+    ToolBlock tool = 5;
+    ListBlock list = 6;
+    Fields fields = 7;
+    Code code = 8;
+    Divider divider = 9;
+    Table table = 10;
+  }
+
+  // ── Block-kind payloads (nested to avoid meridian.ui.v1 name collisions) ──
+
+  message Markdown {
+    string text = 1 [(google.api.field_behavior) = REQUIRED];
+  }
+
+  message Context {
+    string icon = 1 [(google.api.field_behavior) = OPTIONAL];   // short glyph/emoji
+    string text = 2 [(google.api.field_behavior) = REQUIRED];
+  }
+
+  message ToolBlock {
+    enum State {
+      RUNNING = 0;
+      OK = 1;
+      ERROR = 2;
+    }
+    string name = 1 [(google.api.field_behavior) = REQUIRED];    // "forge·list_repos"
+    string args_json = 2 [(google.api.field_behavior) = OPTIONAL]; // call args, JSON (collapsible)
+    State state = 3 [(google.api.field_behavior) = REQUIRED];
+    string summary = 4 [(google.api.field_behavior) = OPTIONAL];   // short result/error line
+  }
+
+  message ListItem {
+    string title = 1 [(google.api.field_behavior) = REQUIRED];
+    string subtitle = 2 [(google.api.field_behavior) = OPTIONAL];
+    repeated string badges = 3 [(google.api.field_behavior) = OPTIONAL];
+    string icon = 4 [(google.api.field_behavior) = OPTIONAL];
+  }
+
+  message ListBlock {
+    string title = 1 [(google.api.field_behavior) = OPTIONAL];
+    repeated ListItem items = 2 [(google.api.field_behavior) = REQUIRED];
+  }
+
+  message Field {
+    string key = 1 [(google.api.field_behavior) = REQUIRED];
+    string value = 2 [(google.api.field_behavior) = OPTIONAL];
+  }
+
+  message Fields {
+    repeated Field fields = 1 [(google.api.field_behavior) = REQUIRED];
+  }
+
+  message Code {
+    string language = 1 [(google.api.field_behavior) = OPTIONAL];
+    string text = 2 [(google.api.field_behavior) = REQUIRED];
+  }
+
+  message Divider {}
+
+  message Column {
+    string key = 1 [(google.api.field_behavior) = REQUIRED];
+    string label = 2 [(google.api.field_behavior) = OPTIONAL];
+  }
+
+  message Row {
+    // column key → cell text (proto3-JSON: a plain object).
+    map<string, string> cells = 1;
+  }
+
+  message Table {
+    string title = 1 [(google.api.field_behavior) = OPTIONAL];
+    repeated Column columns = 2 [(google.api.field_behavior) = REQUIRED];
+    repeated Row rows = 3 [(google.api.field_behavior) = OPTIONAL];
+  }
+}
+
+message TurnDone {
+  string stop_reason = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message TurnError {
+  string message = 1 [(google.api.field_behavior) = REQUIRED];
+}
