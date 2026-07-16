@@ -56,6 +56,15 @@ message FieldBinding {
     // other interaction — no bespoke event bus. Inert on surfaces with no live
     // signals (static / degraded renders).
     string signal = 7;
+    // Pull the current value of a named view SELECTION key — a value published
+    // into the view's selection bag by a sibling panel's scope picker ("which
+    // plan year is this page about?"). The renderer re-invokes the call when the
+    // key's value changes; while the key is UNSET the field is OMITTED entirely
+    // (never sent empty — an unset scope must not silently widen the query). Pair
+    // with Slot.depends_on_selection_key to gate the whole slot rather than fire a
+    // scope-less call. This is the only binding source resolved from live client
+    // state; every other source is constant-folded by the projection.
+    string selection_key = 8;
   }
 }
 
