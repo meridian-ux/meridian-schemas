@@ -15,9 +15,14 @@
 //   - GetView     — one composed page/view, resolved per caller.
 //   - GetPanel    — one panel descriptor, resolved per caller (replaces serving
 //                   a frozen PanelBundle when the set is dynamic).
-//   - WatchNavTree / WatchView — server-streaming push, so nav and dashboards
-//                   update live (entitlement change, a plugin comes online, an
-//                   admin edits layout) instead of only on reload.
+//   - GetLaunchpad — the command palette for THIS caller (the Launchpad peer of
+//                   GetNavTree: entitlement-filtered, relevance/recency ranked).
+//   - ResolveCommands — a free-text query answered with runnable Commands: the
+//                   server half of the "AI launchpad" seam.
+//   - WatchNavTree / WatchView / WatchLaunchpad — server-streaming push, so nav,
+//                   dashboards and the palette update live (entitlement change, a
+//                   plugin comes online, an admin edits layout) instead of only
+//                   on reload.
 //
 // NEUTRALITY (this is load-bearing). LayoutService is the proto analogue of the
 // `RpcInvoker` / `RenderContext` host-transport contracts this module already
@@ -35,13 +40,15 @@
 // "descriptor names intent; each surface transcodes" philosophy, pushed to the
 // server for the cases where the shape itself should differ by surface.
 //
-// Depends on nav_tree.proto (NavTree), view.proto (ViewDescriptor), and
-// panel.proto (PanelDescriptor) for the response types, and field_behavior.
+// Depends on nav_tree.proto (NavTree), view.proto (ViewDescriptor),
+// panel.proto (PanelDescriptor) and command_palette.proto (Launchpad, Command)
+// for the response types, and field_behavior.
 syntax = "proto3";
 
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/command_palette.proto";
 import "proto/nav_tree.proto";
 import "proto/panel.proto";
 import "proto/view.proto";
@@ -72,6 +79,32 @@ service LayoutService {
   // One panel descriptor, resolved for the calling context. Serves the dynamic
   // equivalent of an entry in a static PanelBundle.
   rpc GetPanel(GetPanelRequest) returns (PanelDescriptor);
+
+  // The command palette for the calling context — the Launchpad peer of
+  // GetNavTree. Replaces a static Launchpad artifact (or a client-side
+  // projection over the host's installed surfaces): the SERVER decides which
+  // commands this caller may run, and in what order (entitlement, recents,
+  // relevance), which is exactly the class of decision a client can't make.
+  rpc GetLaunchpad(GetLaunchpadRequest) returns (Launchpad);
+
+  // Server-streaming palette: the current Launchpad, then a fresh one whenever
+  // it changes for this caller (a plugin registers a command, an entitlement
+  // changes, recents move).
+  rpc WatchLaunchpad(GetLaunchpadRequest) returns (stream Launchpad);
+
+  // Resolve a free-text query to runnable commands — the server half of the "AI
+  // launchpad" seam command_palette.proto describes: a query the client's local
+  // filter can't match is handed to the host's agent, which answers with
+  // Commands built from the same `action` vocabulary as every other command. So
+  // "show me failing builds" and a hand-authored menu entry are the same
+  // primitive by the time a renderer runs them.
+  //
+  // SEPARATE from GetLaunchpad on purpose. GetLaunchpad serves the palette a
+  // client filters LOCALLY at keystroke latency; this is a per-query round trip
+  // a renderer debounces and surfaces as an extra group. Folding a query into
+  // GetLaunchpad would double-filter (server ranks, then the client re-filters
+  // the result) and put the network on the critical path of every keystroke.
+  rpc ResolveCommands(ResolveCommandsRequest) returns (ResolveCommandsResponse);
 }
 
 // The neutral calling context. Carries no host/app/brand type: modality + a
@@ -107,4 +140,34 @@ message GetPanelRequest {
   // Stable PanelDescriptor id to resolve.
   string panel_id = 1 [(google.api.field_behavior) = REQUIRED];
   LayoutContext context = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetLaunchpad / WatchLaunchpad. Takes no id: a caller has one
+// palette, the way it has one nav tree (cf. GetNavTreeRequest).
+message GetLaunchpadRequest {
+  LayoutContext context = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for ResolveCommands.
+message ResolveCommandsRequest {
+  // The user's free-text query, verbatim (e.g. "show me failing builds"). The
+  // SERVER interprets it — meridian defines no query grammar, the same way
+  // LayoutContext.attributes stays opaque to the contract.
+  string query = 1 [(google.api.field_behavior) = REQUIRED];
+  LayoutContext context = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response for ResolveCommands. A message rather than a bare repeated Command
+// so the seam can grow (a rationale line, a confidence, a follow-up prompt)
+// without breaking callers.
+message ResolveCommandsResponse {
+  // Runnable commands answering the query, in rank order. Empty ⇒ the agent had
+  // no answer, and the renderer simply shows its local matches. A renderer
+  // surfaces these as their OWN group rather than merging them into the local
+  // results, so a user can always tell what the agent proposed vs. what they
+  // typed toward.
+  repeated Command commands = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Heading for that group (e.g. "Ask the agent", "Did you mean…"). Empty ⇒ the
+  // renderer's own default.
+  string group_title = 2 [(google.api.field_behavior) = OPTIONAL];
 }
