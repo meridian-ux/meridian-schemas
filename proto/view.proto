@@ -118,6 +118,15 @@ message Slot {
   RpcCall sub_view_populate = 9 [(google.api.field_behavior) = OPTIONAL];
   // Path within the `sub_view_populate` response to the row list (a `repeated`).
   string sub_view_rows_field = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Gate this slot on a SELECTION key (see FieldBinding.selection_key): while the
+  // named key is unset in the view's selection bag, the renderer skips this slot's
+  // panel entirely — no `populate` fires — and draws `depends_on_placeholder`
+  // instead. A gated TAB still appears in the strip (its label is how the user
+  // learns the section exists); only its body is replaced. Empty ⇒ ungated.
+  string depends_on_selection_key = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Copy shown while the gate above is closed ("Select a plan year to view this
+  // section."). Empty ⇒ the renderer's neutral default.
+  string depends_on_placeholder = 12 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Where a slot goes within its layout. Fields are interpreted by the active
