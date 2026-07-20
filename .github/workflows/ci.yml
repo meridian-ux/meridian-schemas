@@ -1,0 +1,55 @@
+name: ci
+
+# The contract's own guards. Both gates here exist because the failure they catch
+# has already shipped once:
+#
+#   • check_versions.py — the 0.x caret trap. schemas and proto-ts release as a
+#     matched pair; at 0.x a caret does NOT widen, so a stale dependency range
+#     installs a SECOND, older proto-ts. protobuf-es types are nominal, so the two
+#     copies are mutually unassignable and a consumer cannot fix it from its own
+#     package.json. Shipped in 0.14.0 and 0.15.0. The script has existed since
+#     then; nothing ran it, which is why 0.15.1 was still needed.
+#
+#   • mirror_conformance — hand-maintained mirrors of meridian.ui.v1 that disagree
+#     with it. A shipped mirror transposed GetPanelRequest's field numbers; both
+#     fields are wire type 2, so it corrupts silently in both directions.
+#
+# Deliberately node/python only — no Bazel, no registry auth — so this stays fast
+# and cannot be blocked by a toolchain fetch. The Bazel build is exercised by
+# publish.yml.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install (protobuf-es only — the checker's single dependency)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      # Guards the published-version lockstep. Pure stdlib, no deps.
+      - name: Version lockstep
+        run: python3 tools/check_versions.py
+
+      # Guards the mirror gate itself: proves it still catches a transposition,
+      # a retyped field, a changed label and an unknown field. A gate that has
+      # never been shown to fail is not a gate.
+      - name: Mirror conformance self-test
+        run: node --test "tools/*.test.mjs"
