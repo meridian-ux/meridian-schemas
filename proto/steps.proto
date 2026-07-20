@@ -1,0 +1,81 @@
+// StepsPanel — an ORDERED WALKTHROUGH: a sequence of actions a reader performs,
+// each with an optional narration, an optional illustrating frame, and an
+// optional actor. A FULL-PARITY content shape (like StatPanel and the six
+// brand-neutral shapes, unlike the web-specific Terminal/Grammar panels): an
+// ordered list of labeled text is displayable in EVERY modality, so every
+// renderer realizes it at full fidelity (web = numbered cards with frames, tui =
+// a numbered list, chat = numbered bullets). The frame is enrichment — surfaces
+// that cannot show images simply omit it and lose nothing structural.
+//
+// THE STEP NUMBER IS COMPUTED, NOT AUTHORED — the same principle StatPanel
+// applies to delta/trend. Renderers number from the position in `steps`; there is
+// no ordinal field to drift. This kills the standard tutorial bug where a step is
+// inserted or reordered and the hand-written "Step 4" now reads out of sequence,
+// or two steps both claim to be 3.
+//
+// WHY NOT MARKDOWN. A numbered list is expressible as GrammarPanel markdown, and
+// for hand-written prose that is the right tool. StepsPanel exists for walkthroughs
+// whose steps are STRUCTURED DATA rather than prose — generated from a recording,
+// a plan, or a schema. Flattening those to markdown discards the per-step actor,
+// frame and affordance, so a renderer can no longer badge who acts, offer a
+// lightbox, deep-link a step into the product, or index the steps in a
+// table-of-contents. Author prose as markdown; project structure as steps.
+//
+// DOMAIN-NEUTRAL BY CONSTRUCTION. A producer's own per-step metadata — an
+// execution status, a trace id, a timing — does NOT belong here; meridian carries
+// presentation, not a domain model. A producer keeps those in its own schema and
+// projects the presentable subset into a Step.
+//
+// MULTI-ACTOR. `actor` is a free label ("Admin", "Manager", "User B"). Renderers
+// derive a stable visual per distinct value (a badge, a color, a speaker prefix);
+// the descriptor never carries a color, so the shape stays brand-neutral.
+//
+// Depends on affordance.proto for the optional per-step action.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/affordance.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "StepsProto";
+
+// PanelDescriptor body variant: an ordered walkthrough.
+message StepsPanel {
+  // The steps, in the order the reader performs them. Renderers number them from
+  // this position — see the file comment; there is deliberately no ordinal field.
+  repeated Step steps = 1 [(google.api.field_behavior) = REQUIRED];
+  // Optional lead-in prose shown above the first step (what the walkthrough
+  // achieves, or what the reader needs before starting).
+  string intro = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Optional closing prose shown after the last step (what the reader should now
+  // see, or where to go next).
+  string outro = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// One step of a walkthrough.
+message Step {
+  // The action, as an imperative the reader can follow ("Open the Sponsors
+  // page"). The one field every modality renders.
+  string label = 1 [(google.api.field_behavior) = REQUIRED];
+  // Optional narration expanding on the label — what happens and why. One or two
+  // sentences; renderers set it as body text under the label.
+  string detail = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Optional URI of a frame illustrating this step (a screenshot, a diagram).
+  // Enrichment only: surfaces that cannot display images omit it and fall back to
+  // `media_alt`. Distinct from an icon key — this is a real image source.
+  string media_uri = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Optional text alternative for `media_uri` — the accessible description, and
+  // the degradation content on surfaces that cannot show the frame. Set it
+  // whenever `media_uri` is set.
+  string media_alt = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Optional actor performing this step, as a free label ("Admin", "User B").
+  // Renderers derive a stable badge/color per distinct value. Set it on
+  // multi-actor walkthroughs so a hand-off between people is legible.
+  string actor = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional affordance for this step — a deep link into the surface the step
+  // describes, or a command that performs it ("Open Sponsors").
+  Affordance action = 6 [(google.api.field_behavior) = OPTIONAL];
+}

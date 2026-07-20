@@ -1,0 +1,84 @@
+// MediaPanel — one panel over TIME-BASED AND PICTORIAL MEDIA: a video, an audio
+// track, or a single image, with a poster frame, captions, and chapter marks.
+//
+// A SPECIALIZED VISUAL PANEL, like TerminalPanel and GrammarPanel — it does NOT
+// meet the content shapes' cross-modality field-parity bar, because a moving
+// picture is not displayable as text. It therefore carries its own degradation
+// ladder, mirroring GrammarPanel's:
+//   1. A surface that can play the medium renders a player (web = <video>/<audio>
+//      with the poster and captions track; chapters become seek marks).
+//   2. Else the POSTER as a still image, captioned with `title` + duration, and
+//      the source offered as a link (web-lite, chat).
+//   3. Else `alt` — an author-provided text summary — plus the source URI as
+//      copyable text (tui). Text is displayable everywhere.
+// Never blank, never crash.
+//
+// CAPTIONS ARE THE ACCESSIBLE PATH, NOT A NICETY. `captions_uri` (WebVTT) is what
+// makes a video readable to someone who cannot hear it, and searchable to
+// everyone; `alt` is what makes the panel meaningful to someone who cannot see
+// it. A producer that generates narrated media already has the narration text, so
+// it has no excuse for omitting either.
+//
+// NO PLAYBACK POLICY. There is deliberately no `autoplay` / `loop` / `muted`
+// field. Autoplay is a hostile default and an accessibility failure, and playback
+// policy is the surface's call (and increasingly the platform's), not the
+// descriptor's. A renderer decides; the descriptor describes.
+//
+// Depends only on the field_behavior annotation.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "MediaProto";
+
+// PanelDescriptor body variant: a single piece of media.
+message MediaPanel {
+  // Which medium `src_uri` points at. Drives whether a renderer reaches for a
+  // player or an image element, and how the ladder degrades.
+  MediaKind kind = 1 [(google.api.field_behavior) = OPTIONAL];
+  // URI of the medium itself (an .mp4, .mp3, .png). Host-relative or absolute.
+  string src_uri = 2 [(google.api.field_behavior) = REQUIRED];
+  // Optional poster / thumbnail frame shown before playback and used as the
+  // ladder's second rung. Meaningful for VIDEO and AUDIO; ignored for IMAGE,
+  // which is its own poster.
+  string poster_uri = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Author-provided TEXT alternative — the accessible description, and the
+  // guaranteed-displayable degradation content when the surface can render
+  // neither the medium nor the poster (ladder step 3). Always set it.
+  string alt = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Optional URI of a WebVTT captions/subtitles track. Set it for anything with
+  // speech: it is what makes the medium usable without audio.
+  string captions_uri = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional runtime in milliseconds. Renderers show it before playback so a
+  // reader can judge the commitment; degraded surfaces show it as text.
+  uint32 duration_ms = 6 [(google.api.field_behavior) = OPTIONAL];
+  // Optional chapter marks, in ascending start order. Renderers that can seek
+  // expose them as jump targets; those that cannot list them as a contents.
+  repeated MediaChapter chapters = 7 [(google.api.field_behavior) = OPTIONAL];
+  // Optional caption shown below the medium.
+  string caption = 8 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// A named point in a time-based medium.
+message MediaChapter {
+  // Offset from the start, in milliseconds.
+  uint32 start_ms = 1 [(google.api.field_behavior) = REQUIRED];
+  // Human label for this chapter ("Add the sponsor").
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// The kind of medium. Values default to UNSPECIFIED (0), which renderers treat as
+// "infer from the source, else degrade".
+enum MediaKind {
+  MEDIA_KIND_UNSPECIFIED = 0;
+  // Moving picture with an optional audio track.
+  MEDIA_KIND_VIDEO = 1;
+  // Audio only. Renderers may show the poster as cover art.
+  MEDIA_KIND_AUDIO = 2;
+  // A single still image. `alt` carries its description.
+  MEDIA_KIND_IMAGE = 3;
+}

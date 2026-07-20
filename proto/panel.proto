@@ -9,10 +9,16 @@
 // Depends on table.proto, lro.proto, prompt.proto, llm_prompt.proto.
 //
 // A second family of body variants — the brand-neutral "content" shapes
-// (choice / snippet / action / connect_flow / copy_value / catalog) — describes
-// STATIC authored content (no RpcCall, no fetch), for landing / setup / "how to
-// connect" surfaces. They compose: ConnectFlowPanel is a Choice of targets, each
-// yielding an Affordance + a Snippet.
+// (choice / snippet / action / connect_flow / copy_value / catalog, plus the
+// full-parity stat / steps) — describes STATIC authored content (no RpcCall, no
+// fetch), for landing / setup / "how to connect" / documentation surfaces. Every
+// modality realizes them at full fidelity. They compose: ConnectFlowPanel is a
+// Choice of targets, each yielding an Affordance + a Snippet.
+//
+// A third family — the SPECIALIZED VISUAL panels (terminal / grammar / media) —
+// cannot meet that parity bar, because a pty, a diagram and a moving picture are
+// not displayable as text. Each therefore documents its own DEGRADATION LADDER
+// down to something text-shaped, so no surface ever blanks.
 syntax = "proto3";
 
 package meridian.ui.v1;
@@ -28,10 +34,12 @@ import "proto/gallery.proto";
 import "proto/grammar.proto";
 import "proto/llm_prompt.proto";
 import "proto/lro.proto";
+import "proto/media.proto";
 import "proto/prompt.proto";
 import "proto/rpc.proto";
 import "proto/snippet.proto";
 import "proto/stat.proto";
+import "proto/steps.proto";
 import "proto/table.proto";
 import "proto/terminal.proto";
 
@@ -133,6 +141,17 @@ message PanelDescriptor {
     // via `populate` (bound by the view's `subject_id`). This is the READONLY
     // detail surface; FormPanel(EDIT) remains for editable forms.
     RecordCardPanel record_card = 20;
+    // An ordered walkthrough — steps a reader performs, each with an optional
+    // narration, frame and actor. A full-parity content shape (every modality).
+    // The step NUMBER is computed from position, never authored. For structured
+    // walkthroughs (generated from a recording or a plan); hand-written prose
+    // stays markdown under `grammar`. See steps.proto.
+    StepsPanel steps = 21;
+    // A video / audio / image with a poster, captions and chapters. A
+    // SPECIALIZED visual panel (like terminal/grammar): a moving picture is not
+    // displayable as text, so it degrades player → poster → `alt`. See
+    // media.proto.
+    MediaPanel media = 22;
   }
 }
 
