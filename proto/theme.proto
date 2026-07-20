@@ -72,6 +72,44 @@ message Typography {
   // brand guidelines, and collapses to half its identity when headings fall
   // back to `sans`.
   string display = 7;
+  // Where to OBTAIN the faces named in the stacks above, so a skin is
+  // self-contained rather than depending on each host to have loaded the right
+  // fonts out of band.
+  //
+  // WITHOUT THIS A SKIN CANNOT KEEP ITS OWN PROMISE. A stack is only a list of
+  // NAMES: "Quicksand", "Poppins", system-ui. If the host page never loaded
+  // Quicksand the browser silently renders system-ui — no error, no warning,
+  // just a brand quietly not applied. That failure is invisible in code review
+  // and in screenshots taken on a designer's machine, where the face happens to
+  // be installed locally.
+  //
+  // A renderer that can load fonts (web) materializes these; one that cannot
+  // (tui) ignores them and uses whatever its terminal provides. Renderers should
+  // additionally surface a declared-but-unavailable family as a warning rather
+  // than falling back in silence.
+  repeated FontSource fonts = 8;
+}
+
+// One obtainable font file — the data a web renderer needs to emit an @font-face
+// rule, expressed renderer-neutrally.
+message FontSource {
+  // The family name, which MUST match how the face is named in `sans` /
+  // `display` / `mono` (e.g. "Quicksand"). This is the join key between the
+  // stack and the source.
+  string family = 1;
+  // URI of the font file. Prefer woff2. May be an absolute URL (a CDN) or a
+  // data: URI when a skin must be fully self-contained with no network fetch.
+  string src_uri = 2;
+  // CSS font-weight this file covers: a single weight ("400") or, for a variable
+  // font, a range ("100 900"). Empty means "400".
+  string weight = 3;
+  // CSS font-style: "normal" (default when empty) or "italic".
+  string style = 4;
+  // Optional CSS unicode-range for subsetted files (e.g. "U+0000-00FF").
+  string unicode_range = 5;
+  // CSS font-display strategy: "swap" (default when empty), "optional",
+  // "block", "fallback". "swap" keeps text readable while the face loads.
+  string display = 6;
 }
 
 message Metrics {
