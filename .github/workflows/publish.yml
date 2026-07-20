@@ -44,6 +44,14 @@ jobs:
           npm --version
           bazelisk version
 
+      # schemas depends on proto-ts and the two ship as a matched pair. Because
+      # both are 0.x a stale caret range (`^0.13.0`) can never reach a later
+      # minor, so a release that forgets it publishes a package that drags in a
+      # second, older copy of the proto types — which are nominal, so consumers
+      # get unfixable type errors. That shipped in 0.14.0 and 0.15.0. Gate on it.
+      - name: Check version lockstep
+        run: python3 tools/check_versions.py
+
       - name: Build the npm packages
         run: bazelisk build //proto:proto_ts_pkg //:schemas_pkg
 
