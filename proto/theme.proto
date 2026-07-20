@@ -61,6 +61,17 @@ message Typography {
   // Heading letter-spacing in em as a string (e.g. "-0.015"), since em
   // is fractional and renderer-mapped.
   string heading_tracking = 6;
+  // Display font stack for headings, when the brand pairs a distinct display
+  // face with `sans` (e.g. a serif for titles over a geometric sans for body
+  // and UI). OPTIONAL: when empty a renderer sets headings in `sans`, which is
+  // the correct result for single-face brands — so this is additive and no
+  // existing skin changes appearance by its introduction.
+  //
+  // A brand whose identity IS the pairing cannot be expressed without it: the
+  // savvi skin, for one, is IBM Plex Serif headings over Outfit body per its
+  // brand guidelines, and collapses to half its identity when headings fall
+  // back to `sans`.
+  string display = 7;
 }
 
 message Metrics {
