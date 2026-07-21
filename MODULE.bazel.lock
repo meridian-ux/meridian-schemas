@@ -253,7 +253,7 @@
     "//bazel:protoc_prebuilt.bzl%protoc_prebuilt": {
       "general": {
         "bzlTransitiveDigest": "bU/vjos/Tth/teRlnxzLUSiPqXGcLJkZNZFVEvZTk3A=",
-        "usagesDigest": "osN9cpeX9T3t4VKPGGPOFntP34qTw1cGZUAnXPOUwGQ=",
+        "usagesDigest": "BuXKnRElybjzls+4YDnrql2mH6SrYCyRMrFiOToeL/Y=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
           "meridian_protoc": {
@@ -367,7 +367,7 @@
     "@@rules_nodejs+//nodejs:extensions.bzl%node": {
       "general": {
         "bzlTransitiveDigest": "oZFClfRhTTwsYzpxVPkOpOt/r0+OzEfEV37au0jFZ0s=",
-        "usagesDigest": "bSZW820Yj4b9h+umKUAaBCsyVJpk4dgeMa7ogjXz2a4=",
+        "usagesDigest": "eVXLkpY7h9Kc8WcZ6V/Koa/xiQgyBnT1kAMJgF9GkZk=",
         "recordedInputs": [],
         "generatedRepoSpecs": {
           "nodejs_linux_amd64": {
