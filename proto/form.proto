@@ -53,7 +53,7 @@ message FormField {
     NestedForm nested = 11;
     // A repeated field → a list the user can add to and remove from
     // (JSON Schema `array`, protobuf `repeated`).
-    RepeatedField repeated_field = 12;
+    RepeatedField repeated = 12;
   }
 }
 
@@ -156,9 +156,9 @@ message NumberInput {
 
 // A repeated value → a list the user can add to and remove from.
 //
-// `item` describes ONE element and the renderer repeats it, so a repeated string is a
-// list of text inputs and a repeated message is a list of sub-forms. Recursive by the
-// same route as NestedForm: an array of arrays nests another RepeatedField.
+// Each row is either one leaf FormField (`scalar`) or a NestedForm (`object`).
+// Recursive by the same route as NestedForm: an array of arrays nests another
+// RepeatedField via `scalar.kind.repeated`.
 //
 // WHY THIS EXISTS. Until now `kind` had no repeated arm at all, so every producer had
 // to choose between two bad options for an array field: drop it, or fake it as a
@@ -168,20 +168,24 @@ message NumberInput {
 // than one rendered plainly, and a comma-separated text box invites input the API
 // server then rejects.
 //
-// `item.field_id` and `item.request_field` are IGNORED: an element has no name of its
-// own, only a position. The renderer submits an array under the parent field's
+// `scalar.field_id` and `scalar.request_field` are IGNORED: an element has no name of
+// its own, only a position. The renderer submits an array under the parent field's
 // `request_field`.
 message RepeatedField {
-  // The shape of a single element.
-  FormField item = 1 [(google.api.field_behavior) = REQUIRED];
-  // Minimum number of elements the form should accept. Zero = no minimum.
-  uint32 min_items = 2 [(google.api.field_behavior) = OPTIONAL];
-  // Maximum number of elements. Zero = unbounded, which is the common case —
-  // a schema that omits maxItems is not asking for a limit of nothing.
-  uint32 max_items = 3 [(google.api.field_behavior) = OPTIONAL];
+  oneof element {
+    // Array-of-scalar: each row is one leaf field.
+    FormField scalar = 1 [(google.api.field_behavior) = REQUIRED];
+    // Array-of-object: each row is a sub-form, e.g. {label, kinds}.
+    NestedForm object = 2 [(google.api.field_behavior) = REQUIRED];
+  }
   // Label for the control that appends an element, e.g. "Add port". Empty = the
   // renderer picks, which is usually right; set it where the noun matters.
-  string add_label = 4 [(google.api.field_behavior) = OPTIONAL];
+  string add_label = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Minimum number of elements the form should accept. Zero = no minimum.
+  uint32 min_items = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Maximum number of elements. Zero = unbounded, which is the common case —
+  // a schema that omits maxItems is not asking for a limit of nothing.
+  uint32 max_items = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // A nested object → a sub-form. Each child FormField collects one property of
