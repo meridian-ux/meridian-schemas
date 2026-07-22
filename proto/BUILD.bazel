@@ -103,6 +103,7 @@ proto_library(
         "snippet.proto",
         "stat.proto",
         "steps.proto",
+        "stream.proto",
         "table.proto",
         "terminal.proto",
         "view.proto",

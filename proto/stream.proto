@@ -1,0 +1,88 @@
+// StreamPanel — an APPEND-ONLY LINE STREAM: a subscription that yields text
+// lines over time, rendered as a following log pane. A FULL-PARITY content shape
+// (like StatPanel and StepsPanel, unlike the web-specific Terminal/Grammar
+// panels): a list of text lines is displayable in EVERY modality, so every
+// renderer realizes it (web = an auto-following pane, tui = a tailing pane, chat
+// = the last N lines). Only the LIVENESS degrades, never the content — see the
+// ladder below.
+//
+// WHY THIS IS NOT TerminalPanel. TerminalPanel splices an INTERACTIVE pty: the
+// browser writes keystrokes back, the wire is raw binary both ways, and only the
+// web renderer can realize it (a terminal-in-a-terminal is meaningless). A build
+// log, a deploy log, an agent transcript is the opposite: strictly one-way,
+// text-shaped, and meaningful on every surface. Modelling it as a degenerate pty
+// forces a WebSocket transport and a web-only shape onto data that is neither.
+//
+// WHY THIS IS NOT TablePanel. `populate` fetches ONCE and returns a bounded list.
+// A stream has no response — it has a subscription that outlives the fetch, and a
+// renderer must decide what to keep (`max_lines`) and where to scroll
+// (`follow_mode`). Those are stream concerns with no table analogue.
+//
+// TRANSPORT IS THE HOST'S, INTENT IS MERIDIAN'S. `subscribe` is an ordinary
+// RpcCall naming a SERVER-STREAMING method. Meridian does not say how a stream is
+// carried: a host realizes it through a `StreamInvoker` — the streaming peer of
+// the `RpcInvoker` contract this module already ships (src/uiview/transport.ts) —
+// and is free to back it with server-sent events, a WebSocket, a gRPC stream, or
+// a poll loop. The descriptor is identical either way. `subscribe.bindings`
+// populate the request exactly as they do for a table, so a stream can be bound
+// to a selected row or a detail view's subject.
+//
+// THE DEGRADATION LADDER (applied when a surface has no stream transport):
+//   1. Render whatever lines the host CAN obtain as a bounded, static block (a
+//      snapshot is still the content, just not live).
+//   2. else `placeholder` — the authored empty-state copy.
+// Never blank, never crash. A surface that cannot follow simply does not follow.
+//
+// FRAMES vs LINES. A stream frame is not always a bare string: a host may carry
+// structured frames (a JSON envelope with a level, a timestamp, the text).
+// `line_field` is the dotted path to the human-readable text within a frame;
+// empty means the frame IS the line. Deliberately, there is no severity/timestamp
+// vocabulary here — that is a producer's domain model, and meridian carries
+// presentation, not a domain schema (the same rule StepsPanel states). A producer
+// that wants a level in the output puts it in the line.
+//
+// Depends on rpc.proto for `RpcCall`.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/rpc.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "StreamProto";
+
+// PanelDescriptor body variant: an append-only stream of text lines.
+message StreamPanel {
+  // The SERVER-STREAMING RPC to subscribe to when this panel becomes active.
+  // Bindings populate the request from runtime context (a selected row, the
+  // view's subject) exactly as TablePanel.populate does.
+  RpcCall subscribe = 1 [(google.api.field_behavior) = REQUIRED];
+  // Dotted path to the human-readable text within one streamed frame (e.g.
+  // "line" or "event.message"). Empty ⇒ the frame itself is the line.
+  string line_field = 2 [(google.api.field_behavior) = OPTIONAL];
+  // How many lines to retain. Older lines are dropped from the front — a stream
+  // is unbounded and a renderer must not grow without limit. 0 ⇒ the renderer's
+  // own default.
+  uint32 max_lines = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Scroll behavior as lines arrive. Absent / UNSPECIFIED ⇒ FOLLOW, the useful
+  // default for a live log.
+  FollowMode follow_mode = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Copy shown before the first line arrives, and when the stream yields nothing
+  // (e.g. "Waiting for the build to start…").
+  string placeholder = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Noun for the meta line ("lines", "events", "frames").
+  string item_noun = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// How a StreamPanel scrolls as lines arrive.
+enum FollowMode {
+  // Default; treated as FOLLOW.
+  FOLLOW_MODE_UNSPECIFIED = 0;
+  // Stay pinned to the newest line — but only while the reader IS at the bottom.
+  // A reader who scrolls up is reading; renderers must not yank them back down.
+  FOLLOW_MODE_FOLLOW = 1;
+  // Hold position at the top; the reader scrolls to advance.
+  FOLLOW_MODE_MANUAL = 2;
+}
