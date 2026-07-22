@@ -21,7 +21,11 @@
 
 import type { PanelDescriptor } from "@savvifi/meridian-proto-ts/proto/panel_pb.js";
 import type { Theme } from "@savvifi/meridian-proto-ts/proto/theme_pb.js";
-import type { RenderContext, RpcInvoker } from "./transport.js";
+import type {
+  RenderContext,
+  RpcInvoker,
+  StreamInvoker,
+} from "./transport.js";
 
 /** A handle to one mounted panel, returned by {@link WebRenderer.mount}. */
 export interface PanelHandle {
@@ -52,6 +56,14 @@ export interface MountOptions<TTheme = Theme, TFactory = AdhocDomFactory> {
   descriptor: PanelDescriptor;
   /** Host transport for the populate / action RPCs. */
   invoker: RpcInvoker;
+  /**
+   * Host transport for SERVER-STREAMING methods — what a StreamPanel subscribes
+   * through. Optional and separate from {@link invoker} because streaming is a
+   * surface CAPABILITY, not a given: a host that cannot stream simply omits it
+   * and StreamPanel degrades down its ladder (a bounded snapshot, else the
+   * placeholder). See stream.proto.
+   */
+  streamInvoker?: StreamInvoker;
   /** Active theme/skin (meridian.theme.v1). Each impl binds it natively. */
   theme?: TTheme;
   /** Runtime context (active resource path, identity, form values). */
@@ -69,6 +81,23 @@ export interface MountOptions<TTheme = Theme, TFactory = AdhocDomFactory> {
    * attribute (never dropped) and draw no glyph.
    */
   renderIcon?: (key: string) => unknown;
+  /**
+   * Host route resolver — the LINK peer of the icon / grammar host seams, named
+   * by `ColumnLink` (table.proto) which says the renderer "never builds a URL
+   * itself: it hands the host the target kind + the cell's value (the entity's
+   * id) and the host maps that to its own route".
+   *
+   * Meridian stays URL-agnostic; hosts own routes. Return a URL to draw the cell
+   * as a link, or `null`/nothing to draw plain text — a renderer must never emit
+   * a dead link. `targetKind` is empty for a self/detail link, in which case the
+   * view's own `subject_kind` applies. `row` is the full source row, so a host
+   * that needs more than the id (a tenant, a repo) can read it.
+   */
+  resolveHref?: (opts: {
+    targetKind: string;
+    id: string;
+    row?: object;
+  }) => string | null | undefined;
   /**
    * Host transcoder for a GrammarPanel — a declarative grammar (markdown /
    * mermaid / plantuml / graphviz / vega). This is the surface's capability set:

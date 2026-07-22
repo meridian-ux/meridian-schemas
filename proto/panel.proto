@@ -40,6 +40,7 @@ import "proto/rpc.proto";
 import "proto/snippet.proto";
 import "proto/stat.proto";
 import "proto/steps.proto";
+import "proto/stream.proto";
 import "proto/table.proto";
 import "proto/terminal.proto";
 
@@ -152,6 +153,12 @@ message PanelDescriptor {
     // displayable as text, so it degrades player → poster → `alt`. See
     // media.proto.
     MediaPanel media = 22;
+    // An append-only stream of text lines (a build log, a deploy log, an agent
+    // transcript) rendered as a following pane. A full-parity content shape:
+    // only the LIVENESS degrades — a surface with no stream transport shows a
+    // bounded snapshot, never a blank. Distinct from `terminal` (an interactive
+    // pty, web-only) and from `table` (one bounded fetch). See stream.proto.
+    StreamPanel stream = 23;
   }
 }
 
