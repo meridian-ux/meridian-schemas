@@ -24,6 +24,7 @@ syntax = "proto3";
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/rpc.proto";
 
 option java_multiple_files = true;
 option java_package = "meridian.ui.v1";
@@ -57,6 +58,32 @@ message StatPanel {
   optional bool higher_is_better = 9 [(google.api.field_behavior) = OPTIONAL];
   // Optional caption / secondary text under the tile.
   string caption = 10 [(google.api.field_behavior) = OPTIONAL];
+  // Optional RPC supplying the tile's numbers, run through the host's
+  // RpcInvoker exactly as TablePanel.populate is. The response fills
+  // `value` / `previous` / `series` (read from `value_field` etc. below);
+  // authored values act as the pre-fetch placeholder.
+  //
+  // WHY THIS EXISTS. Without it a StatPanel is STATIC — its `value` is fixed
+  // when the descriptor is authored, which for a compiled panel bundle means
+  // fixed at IMAGE-BUILD TIME. A tile showing a live metric would therefore
+  // display whatever was true when the image was built and never move. Producers
+  // hit this immediately and worked around it by drawing KPI strips as Vega
+  // text-marks over a `data.url` — trading a full-parity shape that renders on
+  // every surface for a web-only chart pretending to be text.
+  RpcCall populate = 11 [(google.api.field_behavior) = OPTIONAL];
+  // Dotted path in the `populate` response to the current value. Empty ⇒ "value".
+  string value_field = 12 [(google.api.field_behavior) = OPTIONAL];
+  // Dotted path to the prior value (drives the computed delta). Empty ⇒ the
+  // response's "previous", when present.
+  string previous_field = 13 [(google.api.field_behavior) = OPTIONAL];
+  // Dotted path to a repeated numeric field for the sparkline / series-derived
+  // delta. Empty ⇒ the response's "series", when present.
+  string series_field = 14 [(google.api.field_behavior) = OPTIONAL];
+  // Dotted path to a SERVER-FORMATTED display string. When set and non-empty it
+  // wins over client formatting — the escape hatch for values only the server
+  // can render honestly (a currency it knows the locale for, a unit it derived).
+  // Everything else stays computed, per this file's opening rule.
+  string display_field = 15 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // How to render a stat's value + delta. The rendering is deterministic and

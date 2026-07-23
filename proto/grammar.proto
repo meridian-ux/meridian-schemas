@@ -43,6 +43,7 @@ package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
 import "google/protobuf/struct.proto";
+import "proto/rpc.proto";
 
 option java_multiple_files = true;
 option java_package = "meridian.ui.v1";
@@ -64,6 +65,23 @@ message GrammarPanel {
   // Optional inline datasets / params merged into the render (chiefly Vega,
   // whose spec may reference named data). A JSON object.
   google.protobuf.Struct data = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Optional RPC supplying the grammar's data, run through the host's
+  // RpcInvoker exactly as TablePanel.populate is. The result is injected as the
+  // render's data — for Vega, into its named `data`; for a diagram grammar, as
+  // the values a template-shaped `source` reads.
+  //
+  // WHY THIS EXISTS. Without it the only way to feed a chart live data was a
+  // `data.url` baked into the spec string, which (a) bypasses the RpcInvoker
+  // entirely, so it ignores the host's auth, routing and error handling, (b) is
+  // invisible to every non-Vega surface — a TUI or chat renderer cannot see a
+  // URL inside an opaque spec, so the panel degrades to alt-text even when the
+  // data would render fine as a table, and (c) cannot be parameterized: a spec
+  // is a frozen string, so hosts resorted to string-interpolating ids into it,
+  // which is both unvalidated and injection-shaped.
+  //
+  // `bindings` populate the request from runtime context, so a chart can be
+  // bound to a selected row or a detail view's subject like any other panel.
+  RpcCall populate = 7 [(google.api.field_behavior) = OPTIONAL];
   // Optional author-provided TEXT fallback (e.g. "Bar chart: requests/day"). The
   // guaranteed-displayable degradation content when no transcoder matches the
   // surface (ladder step 2). Prefer setting it for non-markdown grammars.
