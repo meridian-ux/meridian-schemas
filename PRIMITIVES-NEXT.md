@@ -99,7 +99,7 @@ With 2a+2b, "group Cache into Charts | Details tabs" becomes a `ViewDescriptor`
 
 ---
 
-## 3. `populate` on `GrammarPanel` and `StatPanel` — fetch-driven visuals
+## 3. `populate` on `GrammarPanel` and `StatPanel` — fetch-driven visuals — ✅ landed 0.19.0
 
 **Problem.** Neither carries an RpcCall, so live data can't flow the meridian way:
 - `GrammarPanel` (charts) had to fetch via a **Vega `data.url`** baked into the
