@@ -1,0 +1,69 @@
+// How a VALUE renders — independent of where it is rendered.
+//
+// A value is a value whether it sits in a table cell, a record-card field, or a
+// form control: the same status reads as the same token in all three. Until now
+// that question was answered twice and incompatibly — `TableColumn` carried
+// `ColumnFormat` + `ColumnLink`, while `FormField` carried only an INPUT kind
+// with no display concept at all. Anything a producer knew about a value's
+// MEANING (that a status is a failure, that a reference points at a record) was
+// lost on the way to a field renderer.
+//
+// This file is the shared side of that. It starts with tone; column format and
+// links are the obvious next residents, at which point TableColumn and
+// FormField reference one spec instead of describing the same idea twice.
+//
+// No internal dependencies; consumed by form.proto.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "ValueProto";
+
+// The semantic role a value carries, resolved to a colour by the active
+// Palette — never a colour itself.
+//
+// This is the same contract Palette already states for its own roles ("Roles
+// are semantic, not literal — a renderer never sees 'amber', only 'accent'"),
+// applied one level down: a producer declares that a status MEANS success, and
+// the theme decides what success looks like. A module that named colours would
+// bake one product's palette into domain data and break every other skin.
+//
+// Names correspond to Palette roles of the same name.
+enum ValueTone {
+  VALUE_TONE_UNSPECIFIED = 0;
+  // Default. No emphasis — the value is ordinary.
+  VALUE_TONE_NEUTRAL = 1;
+  // Informational: in progress, scheduled, advisory.
+  VALUE_TONE_INFO = 2;
+  // A good terminal state: done, active, approved, healthy.
+  VALUE_TONE_SUCCESS = 3;
+  // Needs attention but is not a failure: pending, at risk, expiring.
+  VALUE_TONE_WARNING = 4;
+  // A bad state: blocked, failed, rejected, overdue.
+  VALUE_TONE_DANGER = 5;
+  // Brand-forward emphasis with no success/failure meaning — a category or
+  // classification worth setting apart (a sponsor kind, a plan tier).
+  VALUE_TONE_ACCENT = 6;
+}
+
+// One option of a bounded value set, carrying everything a renderer needs to
+// display it rather than just the stored token.
+//
+// `EnumSelection.allowed_values` (a bare string list) cannot express a display
+// label or a tone, so a producer that HAS both — an aion value-set resource
+// declares `localizedLabel` and, now, a tone — lost them at the descriptor
+// boundary and every option rendered as its raw stored id in one flat colour.
+message EnumOption {
+  // The stored value, submitted on selection and matched against a record's
+  // value. e.g. "in_progress".
+  string value = 1 [(google.api.field_behavior) = REQUIRED];
+  // Human-readable, already localized by the producer (which is the only party
+  // that knows the viewer's locale). Falls back to `value` when empty.
+  string label = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Display emphasis. Unspecified reads as NEUTRAL.
+  ValueTone tone = 3 [(google.api.field_behavior) = OPTIONAL];
+}

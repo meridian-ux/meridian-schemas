@@ -106,6 +106,7 @@ proto_library(
         "stream.proto",
         "table.proto",
         "terminal.proto",
+        "value.proto",
         "view.proto",
     ],
     deps = [

@@ -50,6 +50,12 @@ message Palette {
   string success = 10;
   string code_bg = 11;       // inline/code-block background
   string code_fg = 12;       // code foreground
+  // Completing the status set alongside danger/success, so meridian.ui.v1's
+  // ValueTone resolves every role it can name. Without these a producer could
+  // say a value NEEDS ATTENTION or is INFORMATIONAL and the theme had nowhere
+  // to answer, collapsing both into neutral.
+  string warning = 13;       // needs attention, not yet a failure
+  string info = 14;          // informational / in-progress
 }
 
 message Typography {

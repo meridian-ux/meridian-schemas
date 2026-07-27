@@ -6,12 +6,14 @@
 // Spinner/TextField, ratatui input lines, HTML inputs, etc.) and
 // returns collected values keyed by `field_id`.
 //
-// No internal dependencies; consumed by lro.proto and prompt.proto.
+// Depends on value.proto (EnumOption/ValueTone); consumed by lro.proto and
+// prompt.proto.
 syntax = "proto3";
 
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/value.proto";
 
 option java_multiple_files = true;
 option java_package = "meridian.ui.v1";
@@ -91,6 +93,10 @@ message TextInput {
 // `options_source` (exactly one of the two).
 message EnumSelection {
   // Permitted values in display order. Set this OR `options_source`.
+  //
+  // Carries the stored token only. Prefer `options` when the producer knows a
+  // display label or a tone — this field cannot express either, so an option
+  // resolved from it renders as its raw id in the default tone.
   repeated string allowed_values = 1 [(google.api.field_behavior) = OPTIONAL];
   // Pre-selected value. Must appear among the resolved options if set.
   string default_value = 2 [(google.api.field_behavior) = OPTIONAL];
@@ -99,6 +105,16 @@ message EnumSelection {
   // `options_field` from the response, and renders one option per element. Set
   // this OR `allowed_values`.
   OptionsSource options_source = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Permitted values in display order, WITH their display label and tone.
+  //
+  // Additive alternative to `allowed_values`, for producers that know more
+  // about a value than its stored token — an aion value-set resource declares a
+  // localized label and a tone, and neither survived the bare string list.
+  //
+  // PRECEDENCE: when both are set, `options` wins and `allowed_values` is
+  // ignored, so a producer can populate both during a migration without
+  // renderers double-listing.
+  repeated EnumOption options = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Describes an RPC whose response yields a dropdown's options. Mirrors
