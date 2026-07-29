@@ -35,6 +35,11 @@ message FormField {
   string request_field = 3 [(google.api.field_behavior) = OPTIONAL];
   // Optional free-form help text (one-liner) shown under the field.
   string description = 8 [(google.api.field_behavior) = OPTIONAL];
+  // How the field's VALUE reads — orthogonal to `kind`, which is how it is
+  // EDITED. A due date and a posting time are both edited as text and read
+  // completely differently; without this the reader had to guess from the
+  // string's shape. Unset ⇒ unchanged behaviour. See value.proto.
+  ValueDisplay display = 13 [(google.api.field_behavior) = OPTIONAL];
   oneof kind {
     // Integer spinner input.
     IntegerSpinner integer = 4;
