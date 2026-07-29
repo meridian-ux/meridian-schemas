@@ -11,6 +11,7 @@ package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
 import "proto/rpc.proto";
+import "proto/value.proto";
 
 option java_multiple_files = true;
 option java_package = "meridian.ui.v1";
@@ -89,6 +90,16 @@ message TableColumn {
   // renderer draws the value as a link and asks the host to resolve the
   // destination (meridian stays URL-agnostic — the host owns routes).
   ColumnLink link = 5 [(google.api.field_behavior) = OPTIONAL];
+  // How the value reads — the shared spec a form field, a record card and a
+  // detail-header row also use, so one value reads the same everywhere.
+  //
+  // ADDITIVE alongside `format` above, deliberately: `ColumnFormat` is the
+  // table's own older six-case vocabulary, and replacing it outright would be a
+  // breaking change for every consumer pinning the current schema. A renderer
+  // PREFERS `value_display` when set and falls back to `format`, so existing
+  // descriptors are byte-for-byte unaffected and tables migrate when convenient.
+  // `ColumnFormat` should retire once they have.
+  ValueDisplay value_display = 6 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Renders a column's cell as a link navigating to a related entity. The

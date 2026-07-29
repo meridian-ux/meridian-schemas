@@ -67,3 +67,169 @@ message EnumOption {
   // Display emphasis. Unspecified reads as NEUTRAL.
   ValueTone tone = 3 [(google.api.field_behavior) = OPTIONAL];
 }
+
+// ── How a value READS ───────────────────────────────────────────────────────
+//
+// The second resident this file promised (see the header): the shared DISPLAY
+// contract, so a value reads the same in a table cell, a record-card field, a
+// detail-header row and a form control.
+//
+// The gap this closes is not cosmetic. A producer that knows a value's meaning —
+// aion declares `dueDate` as `type: date, sdo: schema:dueDate` and `assignedTo`
+// as `sdo: schema:agent` — had nowhere to SAY it: `FormField` carries only an
+// input kind, and everything that was not a number or an enum arrived as text.
+// The renderer was left to GUESS, which in practice meant a strict ISO-8601
+// regex run against string content in one kit (mui's display_format.ts). That
+// guess is invisible to the TUI and chat renderers, cannot distinguish a due
+// date from a posting time, and cannot tell a person's id from any other string
+// — so a user rendered as a snowflake and a timestamp rendered raw.
+//
+// Declaring beats sniffing: the producer already knows, and every renderer gets
+// the same answer.
+//
+// NAMING: `ValueFormat` was the obvious name and is TAKEN — stat.proto defines a
+// number-only enum by that name (NUMBER / PERCENT / CURRENCY / COMPACT / PLAIN)
+// for KPI tiles. Renaming it would break every StatPanel consumer, so this takes
+// `ValueDisplay` and stat's enum stays put. It is a strict subset of what
+// ValueDisplay expresses — PERCENT and MONEY are ValueTypes, and COMPACT /
+// PLAIN are NumberOptions flags — so StatPanel can migrate onto this later,
+// additively, exactly as TableColumn.format will. Two names for one idea is the
+// cost of not breaking consumers today; it should not outlive the migration.
+//
+// Deliberately NOT here yet: the link half. `ColumnLink` remains table-only; the
+// header names links as a resident too, and PrincipalOptions.link_to_record is a
+// narrow first taste. Promoting a general ValueLink is the next step.
+message ValueDisplay {
+  // What KIND of thing the value is. Unspecified ⇒ the renderer's default
+  // handling (today: the raw string), so an unformatted descriptor is unchanged.
+  ValueType type = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Per-type display options. A renderer that does not recognize the case
+  // ignores it and renders the type's default form — never an error.
+  oneof options {
+    TemporalOptions temporal = 2;
+    NumberOptions number = 3;
+    PrincipalOptions principal = 4;
+  }
+}
+
+// The semantic kind of a value. Names describe MEANING, not a widget: a renderer
+// maps each to its own conventions (web = a chip/link/monospace span, tui = a
+// styled cell, chat = inline text).
+enum ValueType {
+  VALUE_TYPE_UNSPECIFIED = 0;
+  // A short single-line string.
+  VALUE_TYPE_TEXT = 1;
+  // Prose that may wrap over several lines.
+  VALUE_TYPE_MULTILINE_TEXT = 2;
+  // Whole number.
+  VALUE_TYPE_INTEGER = 3;
+  // Fractional number.
+  VALUE_TYPE_DECIMAL = 4;
+  // Renders Yes/No (never a raw `true`).
+  VALUE_TYPE_BOOLEAN = 5;
+  // A member of a bounded set — pair with EnumOption for label + tone.
+  VALUE_TYPE_ENUM = 6;
+  // Several values of the same kind.
+  VALUE_TYPE_LIST = 7;
+  // A calendar day with no meaningful time-of-day (a due date, a plan-year
+  // start). Distinct from DATE_TIME because printing "12:00 AM" on a stored
+  // midnight-Z reads as a real time the user never set.
+  VALUE_TYPE_DATE = 8;
+  // A moment: a posting time, a last-modified stamp.
+  VALUE_TYPE_DATE_TIME = 9;
+  // A time-of-day with no date.
+  VALUE_TYPE_TIME = 10;
+  // An elapsed span, not a point ("4 min 12 s").
+  VALUE_TYPE_DURATION = 11;
+  // A person or agent. The value is their id or handle; the renderer shows a
+  // name. THE case that motivated this file's promotion: without it, a comment's
+  // author renders as a snowflake.
+  VALUE_TYPE_PRINCIPAL = 12;
+  // An email address.
+  VALUE_TYPE_EMAIL = 13;
+  // A navigable URL.
+  VALUE_TYPE_URL = 14;
+  // An opaque machine identifier (a resource id, a commit sha). Renders
+  // monospaced and may be truncated with the full value on demand — it is for
+  // copying and matching, not reading.
+  VALUE_TYPE_IDENTIFIER = 15;
+  // A monetary amount; pair with NumberOptions.currency_code.
+  VALUE_TYPE_MONEY = 16;
+  // A ratio rendered as a percentage.
+  VALUE_TYPE_PERCENT = 17;
+  // A structured blob shown as formatted JSON.
+  VALUE_TYPE_JSON = 18;
+}
+
+// Display options for DATE / DATE_TIME / TIME / DURATION.
+message TemporalOptions {
+  TemporalDisplay display = 1 [(google.api.field_behavior) = OPTIONAL];
+  TemporalPrecision precision = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Absolute or relative — the choice a producer makes per FIELD, because it is a
+// property of the field's meaning and not of the surface. "Posted 5 days ago"
+// is what a reader wants of a comment; "Due 5 days from now" is not what they
+// want of a deadline they must act on.
+enum TemporalDisplay {
+  // Renderer default: ABSOLUTE.
+  TEMPORAL_DISPLAY_UNSPECIFIED = 0;
+  // "Mar 29, 2026" / "Jul 24, 2026, 2:02 PM UTC".
+  TEMPORAL_DISPLAY_ABSOLUTE = 1;
+  // "5 days ago" / "in 3 months".
+  //
+  // NOTE for renderers that server-render: relative text is a function of NOW,
+  // so a server and a client that render at different instants disagree and
+  // hydration mismatches. Resolve it on the client (after mount), or thread a
+  // single "as of" instant through both — do not simply call the clock in both
+  // places.
+  TEMPORAL_DISPLAY_RELATIVE = 2;
+  // Relative text, with the absolute form available on demand (a title/tooltip
+  // on web, a detail line elsewhere). The default worth reaching for on an
+  // activity stream: scannable, without losing the exact stamp.
+  TEMPORAL_DISPLAY_RELATIVE_WITH_ABSOLUTE_TITLE = 3;
+}
+
+// How much of the value to show. A due date wants the day; a log line wants the
+// second.
+enum TemporalPrecision {
+  // Renderer default: DAY for DATE, MINUTE for DATE_TIME / TIME.
+  TEMPORAL_PRECISION_UNSPECIFIED = 0;
+  TEMPORAL_PRECISION_DAY = 1;
+  TEMPORAL_PRECISION_MINUTE = 2;
+  TEMPORAL_PRECISION_SECOND = 3;
+}
+
+// Display options for INTEGER / DECIMAL / MONEY / PERCENT.
+message NumberOptions {
+  // Digits after the decimal point. Explicitly OPTIONAL because 0 is a real
+  // answer ("show no decimals") and must not read as "unset".
+  optional int32 fraction_digits = 1 [(google.api.field_behavior) = OPTIONAL];
+  // ISO 4217 code (e.g. "USD"). MONEY only.
+  string currency_code = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Suppress thousands separators — for a number that is really a code. Stated
+  // negatively so the proto3 zero value is the sane default (grouping ON).
+  bool omit_group_separators = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Compact magnitude: "1.2K", "3.4M". Present so stat.proto's COMPACT case has
+  // a home when StatPanel migrates onto ValueDisplay.
+  bool compact = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Display options for PRINCIPAL / EMAIL.
+message PrincipalOptions {
+  PrincipalDisplay display = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Render as a link to the principal's record. The renderer never builds a URL
+  // — it hands the host the value and the host owns routes, the same seam
+  // ColumnLink uses. No host resolver ⇒ plain text, never a dead link.
+  bool link_to_record = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// What to show when a producer can supply both a name and an address.
+enum PrincipalDisplay {
+  // Renderer default: NAME, falling back to the address when there is no name.
+  PRINCIPAL_DISPLAY_UNSPECIFIED = 0;
+  PRINCIPAL_DISPLAY_NAME = 1;
+  PRINCIPAL_DISPLAY_EMAIL = 2;
+  // The name, with the address available on demand.
+  PRINCIPAL_DISPLAY_NAME_WITH_EMAIL_TITLE = 3;
+}
