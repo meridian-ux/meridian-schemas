@@ -22,17 +22,28 @@
 // package (e.g. table.proto's TableColumn) — proto3-JSON field names are
 // unaffected, so the emitted JSON is byte-identical to chat.v1.
 //
-// Reserved door: a future block kind may embed a PanelDescriptor (panel.proto)
-// so a message can carry a full meridian panel; the block kinds already overlap
-// the panel shapes (fields / list / table). Left unwired here to keep the
-// promotion additive.
+// The door is OPEN (0.21.0): `Block.view` embeds a full ViewDescriptor
+// (view.proto), so a turn can hand back composed UI — a slotted layout of
+// panels — rather than only the block-kit primitives. The block kinds already
+// overlap the panel shapes (fields / list / table); those stay, because a
+// one-off summary should not cost a descriptor. Reach for `view` when the agent
+// is COMPOSING an interface, not narrating a result.
 //
-// Depends on nothing but the field_behavior annotation.
+// Direction is load-bearing: Block → ViewDescriptor is acyclic. ViewDescriptor
+// already self-recurses (Slot.sub_view), which prost boxes. Do NOT add a
+// ViewDescriptor → Block edge; that closes a cycle across two files and the
+// generated Rust stops compiling.
+//
+// Depends on view.proto (and, through it, panel.proto and every shape it
+// unions) plus the field_behavior annotation. It was standalone before 0.21.0 —
+// a consumer generating per-file, rather than one proto_library over the whole
+// srcs list, now pulls that tree.
 syntax = "proto3";
 
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/view.proto";
 
 option java_multiple_files = true;
 option java_package = "meridian.ui.v1";
@@ -88,6 +99,12 @@ message Block {
     Code code = 8;
     Divider divider = 9;
     Table table = 10;
+    // Composed UI: a full slotted view the renderer draws with its own panel
+    // tier. Unlike the primitives above, the host does not interpret this —
+    // it forwards the descriptor and the renderer owns the drawing. A renderer
+    // with no view support falls through to its unknown-kind behaviour (draws
+    // nothing), so emitting one is safe against older clients.
+    ViewDescriptor view = 11;
   }
 
   // ── Block-kind payloads (nested to avoid meridian.ui.v1 name collisions) ──
