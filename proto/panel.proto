@@ -24,6 +24,7 @@ syntax = "proto3";
 package meridian.ui.v1;
 
 import "google/api/field_behavior.proto";
+import "proto/value.proto";
 import "proto/affordance.proto";
 import "proto/catalog.proto";
 import "proto/choice.proto";
@@ -208,6 +209,19 @@ message DescriptorRow {
   string label = 1 [(google.api.field_behavior) = REQUIRED];
   // Dotted path into the record for the value (e.g. "data.type").
   string source_path = 2 [(google.api.field_behavior) = REQUIRED];
+  // How the value READS — the same shared spec a form field and a table cell use,
+  // so one value reads the same on every surface.
+  //
+  // A header row is a labeled VALUE, which is exactly what ValueDisplay describes,
+  // and it was the last read surface with no way to say so: a card field has
+  // `FormField.display` and a cell has `TableColumn.value_display`, while these rows
+  // could only be inferred from string shape. That is why a task's due date rendered
+  // as a raw `2026-03-29T00:00:00.000Z` in the header while the card beside it read
+  // "Mar 29, 2026" — same value, two code paths, only one of them declared.
+  //
+  // Unset ⇒ the renderer's existing inference, so every header emitted before this
+  // is unaffected.
+  ValueDisplay display = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // A form of fields bound to a record — the entity "detail section" /
