@@ -51,6 +51,7 @@ import "google/api/field_behavior.proto";
 import "proto/command_palette.proto";
 import "proto/nav_tree.proto";
 import "proto/panel.proto";
+import "proto/shell.proto";
 import "proto/view.proto";
 
 option java_multiple_files = true;
@@ -60,8 +61,27 @@ option java_outer_classname = "LayoutServiceProto";
 // The host-implemented, brand-neutral layout delivery service. Optional: a
 // meridian app either implements it (dynamic) or ships static descriptors.
 service LayoutService {
+  // The whole application frame for the calling context: title, rail, launchpad,
+  // header/user-menu links, scope and dock, in one round trip.
+  //
+  // The composite of GetNavTree + GetLaunchpad and the frame around them, and it
+  // exists because those two are never wanted apart: a host that serves them
+  // separately makes two calls before it can paint anything, and must decide what
+  // to render while one has arrived and the other has not.
+  //
+  // ENTITLEMENT IS THE REAL REASON. A frame computed per caller can OMIT what the
+  // caller may not reach — a section, a command, a whole dock — rather than
+  // shipping it and hiding it client-side. A hidden nav item is still a list of
+  // your surfaces, delivered to someone who may not use them.
+  rpc GetAppShell(GetAppShellRequest) returns (AppShell);
+
+  // The frame, as it changes: entitlement revoked, a section added by an install,
+  // a badge count moving.
+  rpc WatchAppShell(GetAppShellRequest) returns (stream AppShell);
+
   // The navigation tree for the calling context. Replaces a static NavTree
-  // artifact and any host-side rail/menu composition.
+  // artifact and any host-side rail/menu composition. Prefer GetAppShell when the
+  // caller wants the frame; this stays for a host that composes its own.
   rpc GetNavTree(GetNavTreeRequest) returns (NavTree);
 
   // Server-streaming navigation: emits the current NavTree immediately, then a
@@ -125,6 +145,11 @@ message LayoutContext {
 
 // Request for GetNavTree / WatchNavTree.
 message GetNavTreeRequest {
+  LayoutContext context = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request for GetAppShell / WatchAppShell.
+message GetAppShellRequest {
   LayoutContext context = 1 [(google.api.field_behavior) = OPTIONAL];
 }
 
