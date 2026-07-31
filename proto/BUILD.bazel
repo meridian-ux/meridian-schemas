@@ -100,6 +100,7 @@ proto_library(
         "panel.proto",
         "prompt.proto",
         "rpc.proto",
+        "shell.proto",
         "snippet.proto",
         "stat.proto",
         "steps.proto",

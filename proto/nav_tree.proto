@@ -7,7 +7,7 @@
 // host-owned: the web rail's `buildRail`, the TUI's list, the chat menu each
 // reinvent it, and a consumer cannot say "these panels are one group." NavTree
 // closes that: a declarative sections → groups → leaves tree where each leaf
-// targets a panel or a view.
+// targets a panel, a view, or a route.
 //
 // Brand- and framework-neutral, like every meridian descriptor: it names the
 // nav *intent*; each surface transcodes it to whatever it can display.
@@ -26,7 +26,7 @@
 // itself carries no transport assumption.
 //
 // Depends on nothing but the field_behavior annotation; leaves reference panels
-// and views by id (string), not by import.
+// and views by id, and routes by href — all plain strings, never an import.
 syntax = "proto3";
 
 package meridian.ui.v1;
@@ -46,7 +46,7 @@ message NavTree {
 }
 
 // One node in a NavTree. A node is a LEAF when it sets a `target` (it selects a
-// panel/view when activated) or a GROUP when it has `children` and no target
+// panel/view/route when activated) or a GROUP when it has `children` and no target
 // (it expands/collapses). A node with neither is an inert label; a node with
 // both is invalid — renderers treat `target` as authoritative and ignore
 // children.
@@ -63,6 +63,23 @@ message NavNode {
     string panel_id = 4;
     // Id of a ViewDescriptor (view.proto) to render when activated.
     string view_id = 5;
+    // A client route or href the host resolves (e.g. "/sponsors"). Same arm, and
+    // the same meaning, as Launchpad's `Navigate.route` in command_palette.proto.
+    //
+    // NavTree and Launchpad are siblings — the rail you browse and the overlay you
+    // summon — and a host that navigates by ROUTE could express that in one of them
+    // and not the other. Both real consumers are route-based (aion studio and
+    // hatch), so without this a rail leaf had to carry its URL out-of-band in a
+    // host-side id→href table: a lookup keyed by `id` that the descriptor cannot
+    // see, cannot validate, and cannot ship as data. A compiled NavTree should be
+    // navigable on its own.
+    //
+    // Still brand- and framework-neutral, and it does not make NavTree web-only:
+    // a route is an opaque host-resolved string, exactly as it is for Launchpad.
+    // A surface with no addressable routes (tui, chat) treats a `route` leaf the
+    // way it already treats one it cannot resolve — the degradation ladder in the
+    // file header is unchanged.
+    string route = 9;
   }
   // Child nodes — makes this a group (rendered as an expandable section). A
   // node sets EITHER `target` (leaf) OR `children` (group), not both.

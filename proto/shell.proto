@@ -1,0 +1,130 @@
+// AppShell — meridian's application-frame primitive: the chrome around the content,
+// declared as data instead of reinvented in every host.
+//
+// The tier ABOVE NavTree (nav_tree.proto) and Launchpad (command_palette.proto). Those two
+// already declare the rail you browse and the overlay you summon; nothing declared the
+// FRAME that holds them — the header, the identity menu, the tenant selector, the assistant
+// dock — so every host has reinvented it. That is not hypothetical: `@aion/app-shell` is
+// 11,486 lines, and a second application that wanted the same frame could not take it,
+// because the package hardcodes aion's nav source, aion's session query, aion's
+// organization list and aion's router. It vendored 1,735 lines instead.
+//
+// Brand- and framework-neutral, like every meridian descriptor: it names the frame's
+// INTENT; each surface transcodes it to whatever it can display.
+//   - web  — an app bar with the brand and header links, a collapsible rail (NavTree), a
+//            ⌘K overlay (Launchpad), an avatar menu, and an optional side dock.
+//   - tui  — a full-screen frame: title line, a tree pane, an fzf palette on the same
+//            binding, a status line carrying the scope and the identity.
+//   - chat — the frame collapses to the menu: nav as a numbered menu, launchpad commands
+//            as slash-commands, scope as a "you are in X" line the agent can change.
+// Degradation ladder: a surface that can render no frame at all renders `nav` flat and
+// `launchpad` as a list — exactly what NavTree and Launchpad each promise on their own, so
+// AppShell is never worse than its parts.
+//
+// ⛔ WHAT THIS DELIBERATELY DOES NOT CARRY, and why the seam is not a leak:
+//
+// A frame needs things that are IRREDUCIBLY CODE, and a descriptor that pretended otherwise
+// would be a descriptor no host could satisfy:
+//
+//   • the router      — a `Link` component and the current path
+//   • icon components — `icon` here is a KEY, resolved by the host's icon map
+//   • the brand mark  — an SVG/wordmark node, not a URL to fetch above the fold
+//   • the chat panel  — a live transport, not data
+//   • callbacks       — what happens when the scope selector changes
+//
+// This is the same split meridian already makes everywhere else: PanelDescriptor is data,
+// ComponentKit is code; ViewDescriptor is data, the RpcInvoker is code. AppShell is the
+// data half. `title`, `brand_text`, hrefs, options and geometry are here; the components
+// and callbacks are the host's, handed to the renderer alongside this message.
+//
+// Delivery: pure data. A host may compile it into a `.binpb` or serve it per caller via
+// meridian.ui.v1.LayoutService.GetAppShell (layout_service.proto) — entitlement-filtered,
+// so a user who may not see a section is served a frame that does not contain it, rather
+// than a frame that hides it client-side.
+//
+// Depends on nav_tree.proto and command_palette.proto.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/command_palette.proto";
+import "proto/nav_tree.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "ShellProto";
+
+// The application frame: what surrounds the content on every route.
+message AppShell {
+  // Application name. Shown in the header when the host supplies no brand mark, and used
+  // as the document title / window title / chat greeting depending on surface.
+  string title = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The rail. Absent ⇒ a frame with no navigation, which is legitimate for a
+  // single-surface app (a kiosk, an embedded panel).
+  NavTree nav = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // The ⌘K overlay. Absent ⇒ no palette, and the host should not bind the gesture.
+  Launchpad launchpad = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Links in the header itself, beside the brand — the handful of destinations that must be
+  // reachable without opening the rail.
+  //
+  // ⛔ Reuses NavNode rather than declaring a second link shape, so a header link and a rail
+  // leaf resolve their target, their icon and their badge by exactly one set of rules. A
+  // host that renders both from one code path cannot make them disagree. Groups
+  // (`children`) are meaningless here; a renderer flattens or ignores them.
+  repeated NavNode header_links = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // The identity menu behind the avatar. Same reuse, same reason.
+  repeated NavNode user_menu = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // The tenant/organization selector, when the app is scoped.
+  ScopeSelector scope = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // The assistant dock.
+  ChatDock chat = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // Brand wordmark as text, for surfaces that cannot render a host component (tui, chat)
+  // and as the fallback when a web host supplies no brand node. Empty ⇒ use `title`.
+  string brand_text = 8 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// A tenant/workspace/organization selector shown in the frame.
+//
+// The options are DATA — resolved by whoever knows them, which differs per host and is
+// exactly why this could not stay host-side: aion lists an organization resource from its
+// graph, while another host may derive the one option a verified session proves. Selecting
+// is a host callback; the descriptor says what may be chosen and what is chosen now.
+message ScopeSelector {
+  // Field label (e.g. "Organization", "Workspace", "Tenant").
+  string label = 1 [(google.api.field_behavior) = OPTIONAL];
+  // The choices, in display order.
+  repeated ScopeOption options = 2 [(google.api.field_behavior) = REQUIRED];
+  // Which option is active. Must match one `ScopeOption.id`; a value that matches none
+  // renders as no selection rather than as an error.
+  string selected_id = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Advisory copy under the control (e.g. "Applies to every list on this screen").
+  string helper_text = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message ScopeOption {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// The assistant dock's placement and affordances — NOT its transport.
+//
+// The conversation itself is a live stream the host owns (meridian-chat renders one). This
+// says whether the frame reserves room for it, how much, and what it is called.
+message ChatDock {
+  // Reserve the dock. False ⇒ the frame renders no dock and binds no toggle.
+  bool enabled = 1 [(google.api.field_behavior) = REQUIRED];
+  // Docked open on first render.
+  bool default_open = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Dock width in CSS pixels on web; advisory elsewhere. 0 ⇒ the renderer's default.
+  int32 width_px = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Panel heading (e.g. "Assistant").
+  string title = 4 [(google.api.field_behavior) = OPTIONAL];
+}
