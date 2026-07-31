@@ -11,12 +11,20 @@
 //
 // Brand- and framework-neutral, like every meridian descriptor: it names the frame's
 // INTENT; each surface transcodes it to whatever it can display.
-//   - web  — an app bar with the brand and header links, a collapsible rail (NavTree), a
-//            ⌘K overlay (Launchpad), an avatar menu, and an optional side dock.
-//   - tui  — a full-screen frame: title line, a tree pane, an fzf palette on the same
-//            binding, a status line carrying the scope and the identity.
-//   - chat — the frame collapses to the menu: nav as a numbered menu, launchpad commands
-//            as slash-commands, scope as a "you are in X" line the agent can change.
+//   - web    — an app bar with the brand and header links, a collapsible rail (NavTree), a
+//              ⌘K overlay (Launchpad), an avatar menu, and an optional side dock.
+//   - ios    — iPad: a NavigationSplitView whose sidebar is the tree. iPhone: a TabView of
+//              `primary_nav_ids` with everything else under "More"; `header_links` and
+//              `user_menu` become toolbar items and a Settings destination; the launchpad is
+//              a search sheet; the dock is a sheet, not a column.
+//   - tui    — a full-screen frame: title line, a tree pane, an fzf palette on the same
+//              binding, a status line carrying the scope and the identity.
+//   - chat   — the frame collapses to the menu: nav as a numbered menu, launchpad commands
+//              as slash-commands, scope as a "you are in X" line the agent can change.
+//   - voice  — there is no frame to draw, only one to SPEAK: the app answers "where can I
+//              go?" with `primary_nav_ids` and "what can I do?" with the launchpad's
+//              `default_command_ids`. Both are shortlists for exactly this reason — a
+//              spoken list of eighteen destinations is not navigation.
 // Degradation ladder: a surface that can render no frame at all renders `nav` flat and
 // `launchpad` as a list — exactly what NavTree and Launchpad each promise on their own, so
 // AppShell is never worse than its parts.
@@ -89,6 +97,20 @@ message AppShell {
   // Brand wordmark as text, for surfaces that cannot render a host component (tui, chat)
   // and as the fallback when a web host supplies no brand node. Empty ⇒ use `title`.
   string brand_text = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // NavNode ids to promote where primary navigation is SCARCE, in display order.
+  //
+  // ⛔ Without this, a surface with a small fixed number of primary slots has to invent a
+  // rule. A rail shows eighteen destinations happily; an iOS tab bar holds about five, and a
+  // voice surface answering "where can I go?" can speak about three. "The first five roots"
+  // is not an answer — it makes the tab bar depend on authoring order, and a NavTree may be
+  // assembled at runtime, where authoring order is whatever the graph returned.
+  //
+  // The same shape and the same reason as `Launchpad.default_command_ids`: the producer
+  // knows which destinations matter and the renderer cannot infer it. Ids naming no node are
+  // ignored, and a surface with room for everything ignores the field entirely — so this is
+  // additive, never a second navigation.
+  repeated string primary_nav_ids = 9 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // A tenant/workspace/organization selector shown in the frame.
@@ -114,17 +136,29 @@ message ScopeOption {
   string label = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
-// The assistant dock's placement and affordances — NOT its transport.
+// Whether the frame makes room for an assistant, and what it is called — NOT its transport,
+// and NOT its geometry.
 //
-// The conversation itself is a live stream the host owns (meridian-chat renders one). This
-// says whether the frame reserves room for it, how much, and what it is called.
+// The conversation itself is a live stream the host owns (meridian-chat renders one).
+//
+// ⛔ NO WIDTH FIELD, and its absence is deliberate. It had one — `width_px` — and it was the
+// only pixel measurement anywhere in the semantic layer. Measurements live in `theme.proto`
+// (`radius_px`, `unit_px`, `base_size_px`); `grammar.proto` states the rule outright, that a
+// descriptor names intent "not pixels — so each surface can transcode it to whatever OUTPUT
+// FORMAT". A width is also unanswerable off the web: on iOS the assistant is a sheet, in a
+// TUI a pane, and on a voice or chat surface the assistant IS the surface, so a dock inside
+// it is recursive. A renderer picks its own size; a host that wants a different one themes
+// it.
+//
+// What remains is the part every surface can act on: is there an assistant, does it start
+// visible, and what is it called.
 message ChatDock {
-  // Reserve the dock. False ⇒ the frame renders no dock and binds no toggle.
+  // Reserve the dock. False ⇒ the frame renders no assistant and binds no toggle.
+  //
+  // A conversational surface (chat, voice) ignores this: it is already the conversation.
   bool enabled = 1 [(google.api.field_behavior) = REQUIRED];
-  // Docked open on first render.
+  // Visible on first render, where the surface can show it alongside content.
   bool default_open = 2 [(google.api.field_behavior) = OPTIONAL];
-  // Dock width in CSS pixels on web; advisory elsewhere. 0 ⇒ the renderer's default.
-  int32 width_px = 3 [(google.api.field_behavior) = OPTIONAL];
-  // Panel heading (e.g. "Assistant").
-  string title = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Panel heading, spoken or drawn (e.g. "Assistant").
+  string title = 3 [(google.api.field_behavior) = OPTIONAL];
 }
