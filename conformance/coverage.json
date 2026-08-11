@@ -1,0 +1,575 @@
+{
+  "$schema-note": "Coverage of meridian.ui.v1.PanelDescriptor's `body` oneof, per renderer. Checked against proto/panel.proto by tools/check_coverage.mjs: the arm set must match exactly, every non-'renders' cell must carry a reason, and a full-parity arm that is missing or structurally unrenderable must carry a waiver. Adding an arm to the proto without declaring its coverage fails.",
+  "statuses": {
+    "renders": "The renderer draws the shape.",
+    "placeholder": "The renderer draws an explanatory placeholder instead of the shape.",
+    "separate-entrypoint": "Drawn, but by a dedicated entrypoint outside the main dispatch.",
+    "missing": "Not implemented.",
+    "structural-gap": "Cannot be implemented without an API change \u2014 no seam exists.",
+    "not-applicable": "This tier does not own the shape."
+  },
+  "parity": {
+    "full": "panel.proto: every modality realizes it at full fidelity.",
+    "specialized": "panel.proto: cannot meet the parity bar; documents a degradation ladder.",
+    "standard": "A fetch/interactive shape with no explicit parity declaration."
+  },
+  "renderers": {
+    "web-components": {
+      "repo": "meridian-web",
+      "entrypoint": "src/uiview/renderer.ts"
+    },
+    "web-react": {
+      "repo": "meridian-web-react",
+      "entrypoint": "src/panel_renderer.tsx"
+    },
+    "mui-kit": {
+      "repo": "meridian-mui-kit",
+      "entrypoint": "src/mui_kit.tsx"
+    },
+    "html-kit": {
+      "repo": "meridian-web-react",
+      "entrypoint": "src/html_kit.tsx"
+    },
+    "shadcn-kit": {
+      "repo": "meridian-web-react",
+      "entrypoint": "src/shadcn_kit.tsx"
+    },
+    "tui": {
+      "repo": "meridian-tui",
+      "entrypoint": "rust/tui/src/widget.rs"
+    }
+  },
+  "arms": {
+    "table": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "lro": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "The TUI draws an explanatory placeholder rather than the shape; spelled out instead of a wildcard so a new upstream shape keeps failing the build loudly."
+        }
+      }
+    },
+    "adhoc": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "not-applicable",
+          "reason": "AdhocPanel is dispatched by the core via the handler registry, not by a kit."
+        },
+        "html-kit": {
+          "status": "not-applicable",
+          "reason": "AdhocPanel is dispatched by the core via the handler registry, not by a kit."
+        },
+        "shadcn-kit": {
+          "status": "not-applicable",
+          "reason": "AdhocPanel is dispatched by the core via the handler registry, not by a kit."
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "AdhocPanel is dispatched by the core via the handler registry, not by a kit."
+        }
+      }
+    },
+    "prompt": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "separate-entrypoint",
+          "reason": "Rendered by a dedicated one-shot entrypoint (render_prompt / render_llm_prompt) rather than by PanelView's dispatch."
+        }
+      }
+    },
+    "llm_prompt": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "html-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "shadcn-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "tui": {
+          "status": "separate-entrypoint",
+          "reason": "Rendered by a dedicated one-shot entrypoint (render_prompt / render_llm_prompt) rather than by PanelView's dispatch."
+        }
+      }
+    },
+    "gallery": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "The TUI draws an explanatory placeholder rather than the shape; spelled out instead of a wildcard so a new upstream shape keeps failing the build loudly."
+        }
+      }
+    },
+    "form": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "The TUI draws an explanatory placeholder rather than the shape; spelled out instead of a wildcard so a new upstream shape keeps failing the build loudly."
+        }
+      }
+    },
+    "choice": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "snippet": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "action": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "connect_flow": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "copy_value": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "catalog": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "terminal": {
+      "parity": "specialized",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "structural-gap",
+          "reason": "ComponentKit declares no Terminal member, so no React kit can render it. terminal.proto calls this shape web-specific; the gap is the missing seam, not the missing component."
+        },
+        "mui-kit": {
+          "status": "structural-gap",
+          "reason": "ComponentKit declares no Terminal member, so no React kit can render it. terminal.proto calls this shape web-specific; the gap is the missing seam, not the missing component."
+        },
+        "html-kit": {
+          "status": "structural-gap",
+          "reason": "ComponentKit declares no Terminal member, so no React kit can render it. terminal.proto calls this shape web-specific; the gap is the missing seam, not the missing component."
+        },
+        "shadcn-kit": {
+          "status": "structural-gap",
+          "reason": "ComponentKit declares no Terminal member, so no React kit can render it. terminal.proto calls this shape web-specific; the gap is the missing seam, not the missing component."
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "ComponentKit declares no Terminal member, so no React kit can render it. terminal.proto calls this shape web-specific; the gap is the missing seam, not the missing component."
+        }
+      }
+    },
+    "grammar": {
+      "parity": "specialized",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "stat": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "renders"
+        },
+        "shadcn-kit": {
+          "status": "renders"
+        },
+        "tui": {
+          "status": "renders"
+        }
+      }
+    },
+    "detail_header": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "shadcn-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "The TUI draws an explanatory placeholder rather than the shape; spelled out instead of a wildcard so a new upstream shape keeps failing the build loudly."
+        }
+      }
+    },
+    "record_card": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "shadcn-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "The TUI draws an explanatory placeholder rather than the shape; spelled out instead of a wildcard so a new upstream shape keeps failing the build loudly."
+        }
+      }
+    },
+    "steps": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer.",
+          "waiver": "uiview-core#3 \u2014 a numbered list is full-parity text."
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer.",
+          "waiver": "kit gap \u2014 a numbered list is full-parity text."
+        },
+        "shadcn-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer.",
+          "waiver": "kit gap \u2014 a numbered list is full-parity text."
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "The TUI draws an explanatory placeholder rather than the shape; spelled out instead of a wildcard so a new upstream shape keeps failing the build loudly.",
+          "waiver": "uiview-core#3 \u2014 a numbered list is full-parity text."
+        }
+      }
+    },
+    "media": {
+      "parity": "specialized",
+      "renderers": {
+        "web-components": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "web-react": {
+          "status": "renders"
+        },
+        "mui-kit": {
+          "status": "renders"
+        },
+        "html-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "shadcn-kit": {
+          "status": "missing",
+          "reason": "Not implemented in this renderer."
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "The TUI draws an explanatory placeholder rather than the shape; spelled out instead of a wildcard so a new upstream shape keeps failing the build loudly."
+        }
+      }
+    },
+    "stream": {
+      "parity": "full",
+      "renderers": {
+        "web-components": {
+          "status": "renders"
+        },
+        "web-react": {
+          "status": "structural-gap",
+          "reason": "ComponentKit declares no Stream member, so no React kit can render it \u2014 while stream.proto declares the shape full-parity for every modality.",
+          "waiver": "uiview-core#seam \u2014 adding ComponentKit.Stream is Phase 2 model work."
+        },
+        "mui-kit": {
+          "status": "structural-gap",
+          "reason": "ComponentKit declares no Stream member, so no React kit can render it \u2014 while stream.proto declares the shape full-parity for every modality.",
+          "waiver": "uiview-core#seam \u2014 blocked on ComponentKit.Stream."
+        },
+        "html-kit": {
+          "status": "structural-gap",
+          "reason": "ComponentKit declares no Stream member, so no React kit can render it \u2014 while stream.proto declares the shape full-parity for every modality.",
+          "waiver": "uiview-core#seam \u2014 blocked on ComponentKit.Stream."
+        },
+        "shadcn-kit": {
+          "status": "structural-gap",
+          "reason": "ComponentKit declares no Stream member, so no React kit can render it \u2014 while stream.proto declares the shape full-parity for every modality.",
+          "waiver": "uiview-core#seam \u2014 blocked on ComponentKit.Stream."
+        },
+        "tui": {
+          "status": "placeholder",
+          "reason": "ComponentKit declares no Stream member, so no React kit can render it \u2014 while stream.proto declares the shape full-parity for every modality.",
+          "waiver": "uiview-core#3 \u2014 the TUI owes a tailing pane."
+        }
+      }
+    }
+  }
+}

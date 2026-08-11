@@ -68,3 +68,20 @@ jobs:
 
       - name: Admission gate
         run: node --test ".ts-test/*.test.js"
+
+      # Renderer coverage. PanelDescriptor.body is a 21-arm oneof that no
+      # renderer implements fully — by design — but until now the only way to
+      # know WHICH arms land where was to read six dispatch sites across four
+      # repos and three languages. So an arm could be added to the proto and
+      # never reach a renderer, and a shape panel.proto declares full-parity
+      # could be structurally unrenderable, both in silence. (Both had already
+      # happened: no React kit can draw `stream`, because ComponentKit has no
+      # Stream member.) The manifest makes coverage declared; this makes it
+      # drift loudly.
+      - name: Renderer coverage
+        run: node tools/check_coverage.mjs
+
+      # Printed, not asserted — the matrix in the job log is how a reviewer
+      # sees the shape of the estate without cloning six repositories.
+      - name: Coverage matrix
+        run: node tools/check_coverage.mjs --matrix
