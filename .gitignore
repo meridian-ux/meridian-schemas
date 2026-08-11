@@ -3,3 +3,7 @@ node_modules/
 .DS_Store
 *.tsbuildinfo
 dist/
+# Scratch output for src/uiview/tsconfig.test.json — the seam's tests are built
+# out of the source tree so they can never be published (schemas.package.json
+# ships src/uiview/**/*.js).
+.ts-test/

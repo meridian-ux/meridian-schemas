@@ -15,5 +15,8 @@
     "types": []
   },
   "include": ["**/*.ts", "**/*.d.ts"],
-  "exclude": []
+  // Tests must never emit into the source tree: schemas.package.json ships
+  // `src/uiview/**/*.js`, so a compiled *.test.js sitting here would be
+  // published. They build via tsconfig.test.json into a scratch dir instead.
+  "exclude": ["**/*.test.ts"]
 }
