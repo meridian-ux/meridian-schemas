@@ -21,7 +21,7 @@
 # unrepresentable. That is the whole point; the version number is not.
 #
 # Usage:
-#   tools/assemble_monorepo.sh <dest-dir> [checkout-root]
+#   tools/assemble_monorepo.sh public|internal <dest-dir> [checkout-root]
 #
 # checkout-root defaults to the parent of this repo and must contain a checkout
 # of each source repo (only their git dirs are read; working trees are untouched
@@ -29,8 +29,9 @@
 
 set -euo pipefail
 
-DEST="${1:?usage: assemble_monorepo.sh <dest-dir> [checkout-root]}"
-ROOT="${2:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+SET="${1:?usage: assemble_monorepo.sh public|internal <dest-dir> [checkout-root]}"
+DEST="${2:?usage: assemble_monorepo.sh public|internal <dest-dir> [checkout-root]}"
+ROOT="${3:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -70,7 +71,7 @@ command -v git-filter-repo >/dev/null || python3 -c 'import git_filter_repo' 2>/
 #   meridian-aion-web, meridian-aion-projection -> stay standalone. They are the
 #     only two coupled to the GitLab @aion registry and the only two with no
 #     Bazel, so leaving them out means this merge touches nothing needing GitLab.
-MAP=(
+PUBLIC=(
   "meridian-schemas:schemas"
   "meridian-uiview-core:crates/core"
   "meridian-web-react:packages/web-react"
@@ -82,6 +83,27 @@ MAP=(
   "brand:brand"
   "meridian-ux.github.io:site"
 )
+
+# meridian-ux/meridian-internal. Four Rust services plus the playground app.
+# Paths mirror the source repos rather than inventing a taxonomy — these are
+# services, and the only grouping that earns its keep is crates/ vs apps/.
+#
+# The dependency order matters less here (nothing in this set is the root of the
+# others' graph the way schemas is), so it runs heaviest-first, which just means
+# the biggest rewrite happens while the tree is smallest.
+INTERNAL=(
+  "meridian-proto:crates/projector"
+  "meridian-mcp:crates/mcp"
+  "meridian-k8s:crates/k8s"
+  "meridian-chat-host:crates/chat-host"
+  "meridian-playground:apps/playground"
+)
+
+case "$SET" in
+  public)   MAP=("${PUBLIC[@]}") ;;
+  internal) MAP=("${INTERNAL[@]}") ;;
+  *) echo "first argument must be 'public' or 'internal', got '$SET'" >&2; exit 1 ;;
+esac
 
 mkdir -p "$DEST"
 git -C "$DEST" rev-parse --git-dir >/dev/null 2>&1 || {
