@@ -1,0 +1,26 @@
+// Builds the seam's own unit tests OUT of the source tree.
+//
+// The published package is `src/uiview/**/*.js` (schemas.package.json "files"),
+// so a compiled test emitted next to its source would ship to npm. tsconfig.json
+// therefore excludes *.test.ts and this config picks them back up, writing to a
+// scratch dir that CI then runs with `node --test`.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../.ts-test",
+    "rootDir": ".",
+    "noEmit": false,
+    "types": ["node"]
+  },
+  // Scoped to the files under test and what they import — NOT `**/*.ts`.
+  //
+  // The rest of the seam imports @savvifi/meridian-proto-ts, which is produced
+  // by Bazel (//proto:proto_ts_pkg) and linked with npm_link_package, so it does
+  // not resolve in a plain pnpm tree. ci.yml's gates job is deliberately
+  // node/python only — no Bazel, no registry auth — and this keeps it that way.
+  //
+  // A future test that needs the generated proto types belongs on the Bazel
+  // path (publish.yml), not here. admission.ts is import-free by design.
+  "include": ["admission.ts", "admission.test.ts"],
+  "exclude": []
+}

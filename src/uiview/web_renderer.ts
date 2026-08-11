@@ -21,6 +21,7 @@
 
 import type { PanelDescriptor } from "@savvifi/meridian-proto-ts/proto/panel_pb.js";
 import type { Theme } from "@savvifi/meridian-proto-ts/proto/theme_pb.js";
+import type { AdmissionPolicy } from "./admission.js";
 import type {
   RenderContext,
   RpcInvoker,
@@ -56,6 +57,23 @@ export interface MountOptions<TTheme = Theme, TFactory = AdhocDomFactory> {
   descriptor: PanelDescriptor;
   /** Host transport for the populate / action RPCs. */
   invoker: RpcInvoker;
+  /**
+   * Host policy for WHICH service/method this descriptor may dial through
+   * {@link invoker}, and at which tier. The access-control peer of the other
+   * host seams here: `renderIcon` / `resolveHref` / `renderGrammar` let the
+   * host decide how a descriptor's intent is realised; `admission` lets it
+   * decide whether that intent is permitted at all.
+   *
+   * This matters because a descriptor is data, and data now arrives from
+   * places that are not the application author — meridian-mcp accepts a
+   * model-authored ViewDescriptor and validates its SHAPE, not what it points
+   * at, while a host's invoker may carry an authenticated session.
+   *
+   * OMITTED ⇒ reads (populate) are allowed and mutations (Action.call, form
+   * submit, LRO start) are DENIED, with an error naming the entry to add.
+   * Pass `"unrestricted"` to opt out explicitly. See ./admission.ts.
+   */
+  admission?: AdmissionPolicy;
   /**
    * Host transport for SERVER-STREAMING methods — what a StreamPanel subscribes
    * through. Optional and separate from {@link invoker} because streaming is a

@@ -11,6 +11,7 @@ package(default_visibility = ["//visibility:public"])
 ts_project(
     name = "seam",
     srcs = [
+        "admission.ts",
         "index.ts",
         "stat.ts",
         "transport.ts",
