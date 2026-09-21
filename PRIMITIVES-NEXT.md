@@ -232,8 +232,9 @@ the difference between "delete" being safe on every surface vs. web-only.
 ## Priority / sequencing
 
 1. **`NavTree`** (§1, ✅ landed 0.6.0 alongside the §0 delivery tier) +
-   **renderView maturation** (§2, still open) — the structural wins; they remove the
-   two biggest host-side workarounds (rail + tabs) and are pure additions.
+   **renderView maturation** (§2, now includes keyboard-navigable tabs) — the
+   structural wins; they remove the two biggest host-side workarounds (rail +
+   tabs) and are pure additions.
 2. **`populate` on Grammar/Stat** (§3) — small proto add, big ergonomics win; unblocks
    live charts/KPIs the meridian way.
 3. **`FormPanel` / `CreateDialog` (§7)** — ResourceCard, ActionSet, and ConfirmSpec
