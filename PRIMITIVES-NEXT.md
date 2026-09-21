@@ -244,14 +244,14 @@ the difference between "delete" being safe on every surface vs. web-only.
    landed, including MUI runtime hydration, nested default merging, failed-RPC
    fallback, and submit coverage. The next slice is invoker-backed chart data
    in the TUI. The additive `ChartSpec.rows_field` response-path seam is now
-   landed to make that population contract explicit. The TUI now has a bounded
-   tested row extractor for nested populate responses; wiring that extractor
-   into the stateful invoker/cache path remains the next integration step.
+   landed to make that population contract explicit. The TUI now lazily invokes
+   the populate RPC, extracts bounded nested rows, caches them, and renders a
+   compact terminal table with summary fallback.
 4. **`FormPanel` / `CreateDialog` (§7)** — the create/edit forms, incl. the
    `KEY_VALUE_MAP` field; matures `LroPanel` into a general typed form.
 5. **`ChartSpec`** (§4) — schema, web host seam/fallback, React htmlKit, and a
-   TUI intent summary are landed. Remaining work is populated TUI data rendering,
-   chat degradation, and standalone MUI package linkage.
+   TUI intent summary plus populated bounded row rendering are landed. Remaining
+   work is chat degradation and standalone MUI package linkage.
 6. **Signal cross-modal semantics** (§5) — smallest; formalizes what 0.5.0 started.
 
 Each is additive (new fields / messages), so it's a clean MINOR bump per the registry
