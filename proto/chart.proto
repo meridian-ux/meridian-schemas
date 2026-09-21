@@ -1,0 +1,52 @@
+// ChartSpec — portable chart intent. Renderers transcode the same descriptor
+// into native chart affordances (web), sparklines/bars (TUI), or a compact
+// values table (chat). Vega is an implementation detail of a web host, not the
+// wire format.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/rpc.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "ChartProto";
+
+// PanelDescriptor body variant for a portable chart.
+message ChartPanel {
+  ChartSpec chart = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ChartSpec {
+  ChartMark mark = 1 [(google.api.field_behavior) = REQUIRED];
+  Encoding x = 2 [(google.api.field_behavior) = REQUIRED];
+  Encoding y = 3 [(google.api.field_behavior) = REQUIRED];
+  Encoding series = 4 [(google.api.field_behavior) = OPTIONAL];
+  Encoding facet = 5 [(google.api.field_behavior) = OPTIONAL];
+  RpcCall populate = 6 [(google.api.field_behavior) = OPTIONAL];
+  string title = 7 [(google.api.field_behavior) = OPTIONAL];
+  string y_format = 8 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message Encoding {
+  string field_name = 1 [(google.api.field_behavior) = REQUIRED];
+  EncodingType type = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+enum ChartMark {
+  CHART_MARK_UNSPECIFIED = 0;
+  CHART_MARK_LINE = 1;
+  CHART_MARK_AREA = 2;
+  CHART_MARK_BAR = 3;
+  CHART_MARK_POINT = 4;
+  CHART_MARK_STAT = 5;
+}
+
+enum EncodingType {
+  ENCODING_TYPE_UNSPECIFIED = 0;
+  ENCODING_TYPE_TEMPORAL = 1;
+  ENCODING_TYPE_QUANTITATIVE = 2;
+  ENCODING_TYPE_NOMINAL = 3;
+  ENCODING_TYPE_ORDINAL = 4;
+}

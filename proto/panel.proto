@@ -27,6 +27,7 @@ import "google/api/field_behavior.proto";
 import "proto/value.proto";
 import "proto/affordance.proto";
 import "proto/catalog.proto";
+import "proto/chart.proto";
 import "proto/choice.proto";
 import "proto/connect_flow.proto";
 import "proto/copy_value.proto";
@@ -164,6 +165,9 @@ message PanelDescriptor {
     // A fetch-driven resource grid with lifecycle actions and confirmation
     // guards. Surfaces may degrade cards to an action-bearing table/list.
     ResourceCardPanel resource_cards = 24;
+    // A portable chart intent. Hosts may render it natively or degrade to a
+    // tabular/text representation when no chart capability is available.
+    ChartPanel chart = 25;
   }
 }
 
