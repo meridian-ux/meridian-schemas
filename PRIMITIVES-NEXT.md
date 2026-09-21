@@ -120,7 +120,7 @@ values table on chat) instead of only where a Vega `data.url` resolves.
 
 ---
 
-## 4. `ChartSpec` — portable chart intent (schema + web-components landed)
+## 4. `ChartSpec` — portable chart intent (schema + web/TUI summaries landed)
 
 **Problem.** `GrammarPanel` + Vega is the only chart path, and it's **web-only**:
 tui/chat degrade to `alt`/sparkline/ladder because they can't run a Vega spec. Most
@@ -242,8 +242,9 @@ the difference between "delete" being safe on every surface vs. web-only.
    the resource-management pair usable across the framework's primary web surfaces.
 4. **`FormPanel` / `CreateDialog` (§7)** — the create/edit forms, incl. the
    `KEY_VALUE_MAP` field; matures `LroPanel` into a general typed form.
-5. **`ChartSpec`** (§4) — React/MUI, TUI, and chat renderer parity remain; the
-   schema plus web-components host seam and accessible fallback are landed.
+5. **`ChartSpec`** (§4) — schema, web host seam/fallback, React htmlKit, and a
+   TUI intent summary are landed. Remaining work is populated TUI data rendering,
+   chat degradation, and standalone MUI package linkage.
 6. **Signal cross-modal semantics** (§5) — smallest; formalizes what 0.5.0 started.
 
 Each is additive (new fields / messages), so it's a clean MINOR bump per the registry
