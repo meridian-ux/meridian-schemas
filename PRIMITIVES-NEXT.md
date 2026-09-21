@@ -243,7 +243,8 @@ the difference between "delete" being safe on every surface vs. web-only.
    round-trip. The optional `FormPanel.prefill` RPC contract is now also
    landed, including MUI runtime hydration, nested default merging, failed-RPC
    fallback, and submit coverage. The next slice is invoker-backed chart data
-   in the TUI.
+   in the TUI. The additive `ChartSpec.rows_field` response-path seam is now
+   landed to make that population contract explicit.
 4. **`FormPanel` / `CreateDialog` (§7)** — the create/edit forms, incl. the
    `KEY_VALUE_MAP` field; matures `LroPanel` into a general typed form.
 5. **`ChartSpec`** (§4) — schema, web host seam/fallback, React htmlKit, and a
