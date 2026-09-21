@@ -204,10 +204,6 @@ message RecordCardPanel {
   string id_field = 3 [(google.api.field_behavior) = OPTIONAL];
   // Singular noun for labels / empty states (e.g. "product").
   string item_noun = 4 [(google.api.field_behavior) = OPTIONAL];
-  // Optional RPC that returns the initial field values for an EDIT form.
-  // Renderers merge the response object into the field defaults before the
-  // form becomes interactive; absent or failed prefill leaves defaults intact.
-  RpcCall prefill = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // One labeled descriptor row in a DetailHeaderPanel: a static label and a dotted
@@ -251,6 +247,10 @@ message FormPanel {
   RpcCall submit = 3 [(google.api.field_behavior) = OPTIONAL];
   // Singular noun for labels / empty states (e.g. "product").
   string item_noun = 4 [(google.api.field_behavior) = OPTIONAL];
+  // Optional RPC that returns the initial field values for an EDIT form.
+  // Renderers merge the response object into the field defaults before the
+  // form becomes interactive; absent or failed prefill leaves defaults intact.
+  RpcCall prefill = 5 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Render mode for a FormPanel.
