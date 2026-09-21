@@ -61,6 +61,9 @@ message FormField {
     // A repeated field → a list the user can add to and remove from
     // (JSON Schema `array`, protobuf `repeated`).
     RepeatedField repeated = 12;
+    // A user-editable string map (JSON Schema `object` with additional
+    // properties). Renders as key/value rows in form-capable kits.
+    KeyValueMapField key_value_map = 14;
   }
 }
 
@@ -216,4 +219,18 @@ message RepeatedField {
 message NestedForm {
   // The object's properties, each as its own FormField.
   repeated FormField fields = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// A string-to-string map rendered as editable key/value rows. This is kept
+// distinct from NestedForm because the keys are data supplied by the user,
+// rather than a fixed schema known by the producer.
+message KeyValueMapField {
+  // Label used for the key input. Empty lets the renderer choose.
+  string key_label = 1 [(google.api.field_behavior) = OPTIONAL];
+  // Label used for the value input. Empty lets the renderer choose.
+  string value_label = 2 [(google.api.field_behavior) = OPTIONAL];
+  // Label for the row-add control. Empty lets the renderer choose.
+  string add_label = 3 [(google.api.field_behavior) = OPTIONAL];
+  // Maximum number of entries. Zero means unbounded.
+  uint32 max_items = 4 [(google.api.field_behavior) = OPTIONAL];
 }
