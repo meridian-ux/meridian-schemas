@@ -1,0 +1,64 @@
+// ResourceCardPanel — a fetch-driven grid of resources with lifecycle actions.
+// The descriptor is intentionally neutral: renderers choose cards, rows, or
+// numbered blocks according to their surface capabilities.
+syntax = "proto3";
+
+package meridian.ui.v1;
+
+import "google/api/field_behavior.proto";
+import "proto/rpc.proto";
+
+option java_multiple_files = true;
+option java_package = "meridian.ui.v1";
+option java_outer_classname = "ResourceCardProto";
+
+message ResourceCardPanel {
+  // RPC returning the repeated resource rows.
+  RpcCall populate = 1 [(google.api.field_behavior) = REQUIRED];
+  string rows_field = 2 [(google.api.field_behavior) = OPTIONAL];
+  ResourceCardTemplate template = 3 [(google.api.field_behavior) = REQUIRED];
+  string item_noun = 4 [(google.api.field_behavior) = OPTIONAL];
+  string empty_message = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Maps fields in each populate row to the card's visible content.
+message ResourceCardTemplate {
+  string title_field = 1 [(google.api.field_behavior) = REQUIRED];
+  string subtitle_field = 2 [(google.api.field_behavior) = OPTIONAL];
+  string status_field = 3 [(google.api.field_behavior) = OPTIONAL];
+  repeated MetaField meta = 4 [(google.api.field_behavior) = OPTIONAL];
+  ActionSet actions = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message MetaField {
+  string label = 1 [(google.api.field_behavior) = REQUIRED];
+  string field_path = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message ActionSet {
+  repeated ResourceAction actions = 1 [(google.api.field_behavior) = OPTIONAL];
+}
+
+message ResourceAction {
+  string id = 1 [(google.api.field_behavior) = REQUIRED];
+  string label = 2 [(google.api.field_behavior) = REQUIRED];
+  ActionStyle style = 3 [(google.api.field_behavior) = OPTIONAL];
+  RpcCall invoke = 4 [(google.api.field_behavior) = OPTIONAL];
+  ConfirmSpec confirm = 5 [(google.api.field_behavior) = OPTIONAL];
+  // Simple row predicate, e.g. "phase==Suspended". Empty means always shown.
+  string visible_when = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+enum ActionStyle {
+  ACTION_STYLE_UNSPECIFIED = 0;
+  ACTION_STYLE_DEFAULT = 1;
+  ACTION_STYLE_PRIMARY = 2;
+  ACTION_STYLE_DANGER = 3;
+}
+
+message ConfirmSpec {
+  string title = 1 [(google.api.field_behavior) = REQUIRED];
+  string message = 2 [(google.api.field_behavior) = REQUIRED];
+  string confirm_label = 3 [(google.api.field_behavior) = OPTIONAL];
+  bool destructive = 4 [(google.api.field_behavior) = OPTIONAL];
+}
