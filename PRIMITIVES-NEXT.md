@@ -161,7 +161,7 @@ render, which is already the documented fallback).
 
 ---
 
-## 6. `ResourceCard` + `ActionSet` — declarative cards with lifecycle actions — schema + web-components landed
+## 6. `ResourceCard` + `ActionSet` — declarative cards with lifecycle actions — landed across web kits
 
 **Problem.** Building the fastverk **Workspaces** console (a card per dev workspace:
 phase badge, metadata chips, an idle countdown, launch buttons, and a
@@ -236,10 +236,9 @@ the difference between "delete" being safe on every surface vs. web-only.
    two biggest host-side workarounds (rail + tabs) and are pure additions.
 2. **`populate` on Grammar/Stat** (§3) — small proto add, big ergonomics win; unblocks
    live charts/KPIs the meridian way.
-3. **React/MUI parity for `ResourceCard` + `ActionSet` (§6) + `ConfirmSpec` (§8)** —
-   the schema and web-components vertical slice is landed; the next slice carries
-   the same contract through the React component-kit and MUI renderer. This keeps
-   the resource-management pair usable across the framework's primary web surfaces.
+3. **`FormPanel` / `CreateDialog` (§7)** — ResourceCard, ActionSet, and ConfirmSpec
+   now have schema, web-components, React, htmlKit, shadcn, and MUI paths. The next
+   structural gap is a reusable typed create/edit form with map/list fields.
 4. **`FormPanel` / `CreateDialog` (§7)** — the create/edit forms, incl. the
    `KEY_VALUE_MAP` field; matures `LroPanel` into a general typed form.
 5. **`ChartSpec`** (§4) — schema, web host seam/fallback, React htmlKit, and a
