@@ -161,7 +161,7 @@ render, which is already the documented fallback).
 
 ---
 
-## 6. `ResourceCard` + `ActionSet` — declarative cards with lifecycle actions
+## 6. `ResourceCard` + `ActionSet` — declarative cards with lifecycle actions — schema + web-components landed
 
 **Problem.** Building the fastverk **Workspaces** console (a card per dev workspace:
 phase badge, metadata chips, an idle countdown, launch buttons, and a
@@ -218,7 +218,7 @@ already has cross-modal precedent (`EnumSelection.options_source`, 0.4.0).
 
 ---
 
-## 8. `ConfirmSpec` — the destructive-action guard
+## 8. `ConfirmSpec` — the destructive-action guard — schema + web-components landed
 
 **Problem.** Every delete in the console re-implements a confirm modal host-side.
 
@@ -236,10 +236,10 @@ the difference between "delete" being safe on every surface vs. web-only.
    two biggest host-side workarounds (rail + tabs) and are pure additions.
 2. **`populate` on Grammar/Stat** (§3) — small proto add, big ergonomics win; unblocks
    live charts/KPIs the meridian way.
-3. **`ResourceCard` + `ActionSet` (§6) + `ConfirmSpec` (§8)** — the resource-management
-   pair; together they remove the biggest host-side surface (the whole Workspaces
-   manager: cards, lifecycle actions, delete-confirm) and generalize to every
-   resource console (builds, agents, deployments). `ConfirmSpec` is tiny and rides §6.
+3. **React/MUI parity for `ResourceCard` + `ActionSet` (§6) + `ConfirmSpec` (§8)** —
+   the schema and web-components vertical slice is landed; the next slice carries
+   the same contract through the React component-kit and MUI renderer. This keeps
+   the resource-management pair usable across the framework's primary web surfaces.
 4. **`FormPanel` / `CreateDialog` (§7)** — the create/edit forms, incl. the
    `KEY_VALUE_MAP` field; matures `LroPanel` into a general typed form.
 5. **`ChartSpec`** (§4) — the ambitious cross-modal charting primitive; largest scope,
