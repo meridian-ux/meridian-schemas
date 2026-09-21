@@ -237,8 +237,9 @@ the difference between "delete" being safe on every surface vs. web-only.
 2. **`populate` on Grammar/Stat** (§3) — small proto add, big ergonomics win; unblocks
    live charts/KPIs the meridian way.
 3. **`FormPanel` / `CreateDialog` (§7)** — ResourceCard, ActionSet, and ConfirmSpec
-   now have schema, web-components, React, htmlKit, shadcn, and MUI paths. The next
-   structural gap is a reusable typed create/edit form with map/list fields.
+   now have schema, web-components, React, htmlKit, shadcn, and MUI paths. The
+   reusable `KeyValueMapField` contract is now landed; the next slice is its
+   cross-kit form renderer and submit round-trip.
 4. **`FormPanel` / `CreateDialog` (§7)** — the create/edit forms, incl. the
    `KEY_VALUE_MAP` field; matures `LroPanel` into a general typed form.
 5. **`ChartSpec`** (§4) — schema, web host seam/fallback, React htmlKit, and a
