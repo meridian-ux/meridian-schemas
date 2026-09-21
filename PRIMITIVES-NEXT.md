@@ -241,8 +241,9 @@ the difference between "delete" being safe on every surface vs. web-only.
    reusable `KeyValueMapField` contract is now landed, with web-react, TUI, and
    MUI renderers covering indexed key/value rows and the canonical JSON
    round-trip. The optional `FormPanel.prefill` RPC contract is now also
-   landed; the next slice is runtime prefill merging and full submission
-   semantics.
+   landed, including MUI runtime hydration, nested default merging, failed-RPC
+   fallback, and submit coverage. The next slice is invoker-backed chart data
+   in the TUI.
 4. **`FormPanel` / `CreateDialog` (§7)** — the create/edit forms, incl. the
    `KEY_VALUE_MAP` field; matures `LroPanel` into a general typed form.
 5. **`ChartSpec`** (§4) — schema, web host seam/fallback, React htmlKit, and a
