@@ -27,6 +27,9 @@ message ChartSpec {
   RpcCall populate = 6 [(google.api.field_behavior) = OPTIONAL];
   string title = 7 [(google.api.field_behavior) = OPTIONAL];
   string y_format = 8 [(google.api.field_behavior) = OPTIONAL];
+  // Proto path to the repeated row collection in the populate response.
+  // Empty means the response itself is the row collection.
+  string rows_field = 9 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message Encoding {
