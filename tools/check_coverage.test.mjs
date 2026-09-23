@@ -24,7 +24,7 @@ test("the committed manifest and proto agree", () => {
 
 test("the parser finds every arm of the body oneof", () => {
   const arms = realArms();
-  assert.equal(arms.length, 21);
+  assert.equal(arms.length, 23);
   // Field numbers start at 3 (1/2 are panel_id/title) and must be unique.
   assert.equal(new Set(arms.map((a) => a.number)).size, arms.length);
   assert.ok(arms.some((a) => a.name === "table" && a.type === "TablePanel"));

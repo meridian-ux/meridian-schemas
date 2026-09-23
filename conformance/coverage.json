@@ -480,6 +480,43 @@
         }
       }
     },
+    "resource_cards": {
+      "parity": "standard",
+      "renderers": {
+        "web-components": { "status": "renders" },
+        "web-react": {
+          "status": "renders",
+          "reason": "The React renderer fetches rows and renders metadata, status, visibility-gated actions, and confirmation controls."
+        },
+        "mui-kit": { "status": "renders" },
+        "html-kit": { "status": "renders" },
+        "shadcn-kit": { "status": "renders" },
+        "tui": {
+          "status": "renders",
+          "reason": "The TUI renders resource-card rows as selectable numbered text cards with metadata and visible actions."
+        }
+      }
+    },
+    "chart": {
+      "parity": "specialized",
+      "renderers": {
+        "web-components": { "status": "renders" },
+        "web-react": { "status": "renders" },
+        "mui-kit": {
+          "status": "renders",
+          "reason": "MeridianChart renders portable chart intent and fetched rows as an accessible data table."
+        },
+        "html-kit": { "status": "renders" },
+        "shadcn-kit": {
+          "status": "renders",
+          "reason": "The shadcn kit renders the portable chart mark, title, and x/y field summary."
+        },
+        "tui": {
+          "status": "renders",
+          "reason": "The TUI renders portable chart intent and populated rows as a bounded terminal table."
+        }
+      }
+    },
     "steps": {
       "parity": "full",
       "renderers": {
